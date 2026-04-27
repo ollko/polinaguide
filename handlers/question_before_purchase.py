@@ -10,6 +10,9 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     CallbackQuery,
 )
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from data import save_answer, save_question
 
 ADMIN_ID = int(os.environ.get("ADMIN_ID"))
 
@@ -24,6 +27,7 @@ class SupportStates(StatesGroup):
 class ReplyCallback(CallbackData, prefix="rep"):
     user_id: int
     username: str
+    ticket_id: int  # Добавили это поле
 
 
 @question_before_purchase_router.callback_query(F.data == "ask_question_start")
@@ -56,20 +60,30 @@ async def cancel_question(callback: CallbackQuery, state: FSMContext):
 
 
 @question_before_purchase_router.message(SupportStates.waiting_for_question)
-async def forward_question_to_admin(message: Message, state: FSMContext, bot: Bot):
+async def forward_question_to_admin(
+    message: Message,
+    state: FSMContext,
+    bot: Bot, session:
+    AsyncSession,
+):
+    ticket_id = await save_question(session, message.from_user.id, message.text)
+
     # Отправляем админу
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
             text="Ответить",
             callback_data=ReplyCallback(
                 user_id=message.from_user.id,
-                username=message.from_user.username or "id" + str(message.from_user.id)).pack()
+                username=message.from_user.username or "id" +
+                str(message.from_user.id),
+                ticket_id=ticket_id,
+            ).pack()
         )]
     ])
 
     await bot.send_message(
         ADMIN_ID,
-        f"📩 **Новый вопрос!**\nОт: @{message.from_user.username} ({message.from_user.id})\n\nТекст: {message.text}",
+        f"📩 **Новый вопрос! (ID: {ticket_id})**\nОт: @{message.from_user.username}\n\nТекст: {message.text}",
         reply_markup=kb
     )
     # Отправляем пользователю
@@ -83,10 +97,13 @@ async def setup_answer(
     callback_data: ReplyCallback,
     state: FSMContext
 ):
-    await state.update_data(reply_to_id=callback_data.user_id)
-
+    await state.update_data(
+        reply_to_id=callback_data.user_id,
+        ticket_id=callback_data.ticket_id,
+    )
     await callback.message.answer(f"Введите ответ для @{callback_data.username}:")
     await state.set_state(SupportStates.waiting_for_answer)
+    print(f'{state=}')
     await callback.answer()
 
 
@@ -94,14 +111,17 @@ async def setup_answer(
 async def send_answer_to_user(
     message: Message,
     state: FSMContext,
-    bot: Bot
+    bot: Bot,
+    session: AsyncSession
 ):
     data = await state.get_data()
-    print(f'{data=}')
+    data = await state.get_data()
     user_id = data.get("reply_to_id")
+    ticket_id = data.get("ticket_id")
 
     try:
         await bot.send_message(user_id, f"🔔 **Ответ от Полины:**\n\n{message.text}")
+        await save_answer(session, ticket_id, message.text)
         await message.answer("Ответ успешно отправлен пользователю.")
     except Exception as e:
         await message.answer(f"Ошибка при отправке: {e}")

@@ -4,8 +4,8 @@ import sys
 from os import getenv
 
 from aiogram import Bot, Dispatcher
-
 from aiogram.client.session.aiohttp import AiohttpSession
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from handlers.start import start_router
 from handlers.free_guide import free_quide_router
@@ -13,6 +13,8 @@ from handlers.road_trip_guide import road_trip_quide_router
 from handlers.payments import payments_router
 from handlers.question_before_purchase import question_before_purchase_router
 # Bot token can be obtained via https://t.me/BotFather
+from middlewares import DbSessionMiddleware
+
 TOKEN = getenv("BOT_TOKEN")
 
 # All handlers should be attached to the Router (or Dispatcher)
@@ -27,11 +29,15 @@ async def main() -> None:
         payments_router,
         question_before_purchase_router,
     )
+    engine = create_async_engine("sqlite+aiosqlite:///db.sqlite3", echo=True)
+    session_pool = async_sessionmaker(engine, expire_on_commit=False)
 
-    session = AiohttpSession(proxy='socks5://127.0.0.1:10808')
+    dp.update.middleware(DbSessionMiddleware(session_pool=session_pool))
+
+    aiohttpsession = AiohttpSession(proxy='socks5://127.0.0.1:10808')
     bot = Bot(
         token=TOKEN,
-        session=session,
+        session=aiohttpsession,
         # default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
     await dp.start_polling(bot)
