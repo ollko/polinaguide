@@ -1,6 +1,7 @@
 import os
 
 from aiogram import Bot, Router, F
+from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import (
@@ -18,6 +19,11 @@ question_before_purchase_router = Router()
 class SupportStates(StatesGroup):
     waiting_for_question = State()
     waiting_for_answer = State()  # Для админа
+
+
+class ReplyCallback(CallbackData, prefix="rep"):
+    user_id: int
+    username: str
 
 
 @question_before_purchase_router.callback_query(F.data == "ask_question_start")
@@ -54,7 +60,11 @@ async def forward_question_to_admin(message: Message, state: FSMContext, bot: Bo
     # Отправляем админу
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
-            text="Ответить", callback_data=f"reply_{message.from_user.id}")]
+            text="Ответить",
+            callback_data=ReplyCallback(
+                user_id=message.from_user.id,
+                username=message.from_user.username or "id" + str(message.from_user.id)).pack()
+        )]
     ])
 
     await bot.send_message(
@@ -67,15 +77,15 @@ async def forward_question_to_admin(message: Message, state: FSMContext, bot: Bo
     await state.clear()
 
 
-@question_before_purchase_router.callback_query(F.data.startswith("reply_"))
+@question_before_purchase_router.callback_query(ReplyCallback.filter())
 async def setup_answer(
     callback: CallbackQuery,
+    callback_data: ReplyCallback,
     state: FSMContext
 ):
-    target_user_id = callback.data.split("_")[1]
-    await state.update_data(reply_to_id=target_user_id)
+    await state.update_data(reply_to_id=callback_data.user_id)
 
-    await callback.message.answer(f"Введите ответ для пользователя @{callback.message.from_user.username}:")
+    await callback.message.answer(f"Введите ответ для @{callback_data.username}:")
     await state.set_state(SupportStates.waiting_for_answer)
     await callback.answer()
 
