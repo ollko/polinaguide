@@ -1,7 +1,9 @@
-from aiogram import Router, types, F
+from typing import Union
+
+from aiogram import Router, F
 from aiogram.filters.command import CommandStart
 from aiogram.filters.chat_member_updated import ChatMemberUpdatedFilter, MEMBER, KICKED
-from aiogram.types import ChatMemberUpdated
+from aiogram.types import ChatMemberUpdated, Message, CallbackQuery
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,18 +18,30 @@ from inline_markups import greating_markup
 start_router = Router()
 
 
+@start_router.callback_query(F.data == "main_menu")
 @start_router.message(CommandStart())
-async def start(message: types.Message, session: AsyncSession):
-    """Return 'Start' button"""
+async def start(event: Union[Message, CallbackQuery], session: AsyncSession):
+    user = event.from_user
+    text_to_send = GREATING_TEXT
+
     await create_or_update_user(
         session=session,
-        tg_id=message.from_user.id,
-        username=message.from_user.username
+        tg_id=user.id,
+        username=user.username
     )
-    await message.answer(
-        text=GREATING_TEXT,
-        reply_markup=greating_markup,
-    )
+
+    if isinstance(event, Message):
+        await event.answer(
+            text=text_to_send,
+            reply_markup=greating_markup,
+        )
+
+    elif isinstance(event, CallbackQuery):
+        await event.message.edit_text(
+            text=text_to_send,
+            reply_markup=greating_markup,
+        )
+        await event.answer()
 
 
 @start_router.my_chat_member(ChatMemberUpdatedFilter(member_status_changed=KICKED))

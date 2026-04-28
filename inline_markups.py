@@ -4,8 +4,12 @@ from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
 )
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+
+back_to_main_meny_btn = InlineKeyboardButton(
+    text='👈🏼 Вернуться в начало',
+    callback_data='main_menu'
+)
 i_want_to_go_on_a_road_trip_btn = InlineKeyboardButton(
     text='🚗 Авторский Гайд “Автопутешествие по Западной Сербии”',
     callback_data='road_trip_guide'
@@ -77,17 +81,23 @@ buy_a_guide_markup = InlineKeyboardMarkup(
 
 # free_guide
 CHANNEL_URL = environ.get("CHANNEL_URL")
+get_free_guide_btn = InlineKeyboardButton(
+    text='Забрать гайд бесплатно 🎁',
+    callback_data='get_free_guide'
+)
 whats_inside_free_guide_btn = InlineKeyboardButton(
     text='Что внутри',
     callback_data='whats_inside_free_guide'
 )
+back_to_get_free_guide_btn = InlineKeyboardButton(
+    text='👈🏼 Вернуться и забрать  🎁',
+    callback_data='free_guide'
+)
+
+
 suitable_for_whom_free_guide_btn = InlineKeyboardButton(
     text='Кому подойдёт',
     callback_data='suitable_for_whom_free_guide'
-)
-free_guide_btn = InlineKeyboardButton(
-    text='Забрать гайд бесплатно 🎁',
-    callback_data='get_free_guide'
 )
 subscribe_btn = InlineKeyboardButton(
     text='🔗 Подписаться на мой канал',
@@ -95,25 +105,36 @@ subscribe_btn = InlineKeyboardButton(
 )
 check_membership_btn = InlineKeyboardButton(
     text='Я подписался, проверяй',
-    callback_data='Check_membership_and_get_gift'
+    callback_data='check_membership_and_get_gift'
 )
 
-whats_inside_free_guide_markup = InlineKeyboardMarkup(
+free_guide_in_depth_markup = InlineKeyboardMarkup(
     inline_keyboard=[
-        [whats_inside_free_guide_btn,],
-        [suitable_for_whom_free_guide_btn,],
-        [free_guide_btn,],
+        [get_free_guide_btn],
+        [whats_inside_free_guide_btn],
+        [suitable_for_whom_free_guide_btn],
+        [back_to_main_meny_btn],
+    ]
+)
+back_to_free_guide_in_depth_markup = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [back_to_get_free_guide_btn,],
+    ]
+)
+back_main_menu_markup = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [back_to_main_meny_btn,],
     ]
 )
 suitable_for_whom_free_guide_markup = InlineKeyboardMarkup(
     inline_keyboard=[
         [suitable_for_whom_free_guide_btn,],
-        [free_guide_btn,],
+
     ]
 )
 free_guide_markup = InlineKeyboardMarkup(
     inline_keyboard=[
-        [subscribe_btn,],
         [check_membership_btn,],
+        [subscribe_btn,],
     ]
 )
