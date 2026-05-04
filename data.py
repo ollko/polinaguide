@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
-from models import User, SupportTicket
+from models import User, Action, SupportTicket
 
 
 async def create_or_update_user(session: AsyncSession, tg_id: int, username: str = None):
@@ -56,4 +56,30 @@ async def save_answer(session: AsyncSession, ticket_id: int, answer_text: str):
         .values(answer=answer_text)
     )
     await session.execute(stmt)
+    await session.commit()
+
+
+async def log_action(
+        session: AsyncSession,
+        tg_id: int,
+        action_type: str,
+        currency: str,
+        price: int,
+):
+    """
+    Записывает действие пользователя (например, 'buy_guide') в таблицу Action
+    """
+    print('in log_action ...')
+    print(f'{tg_id=}')
+    user_query = select(User.id).where(User.tg_id == tg_id)
+    result = await session.execute(user_query)
+    user_id = result.scalar_one()
+
+    new_action = Action(
+        user_id=user_id,
+        action_type=action_type,
+        currency=currency,
+        price=price,
+    )
+    session.add(new_action)
     await session.commit()

@@ -3,7 +3,9 @@ from os import environ
 from aiogram import Bot, Router, types, F
 from aiogram.types import LinkPreviewOptions
 from aiogram.enums import ChatMemberStatus
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from data import log_action
 from texts import (
     I_WANT_A_FREE_GUIDE,
     WHATS_INSIDE_FREE_GUIDE,
@@ -68,9 +70,10 @@ async def free_guide(callback: types.CallbackQuery):
 
 
 @free_quide_router.callback_query(F.data == "check_membership_and_get_gift")
-async def handle_gift_request(callback: types.CallbackQuery, bot: Bot):
+async def handle_gift_request(callback: types.CallbackQuery, bot: Bot, session: AsyncSession):
     print('in handle_gift_request ...')
     user_id = callback.from_user.id
+    print(f'{callback.from_user.id=}')
     is_subscribed = await check_sub(bot, user_id)
 
     if is_subscribed:
@@ -87,6 +90,12 @@ async def handle_gift_request(callback: types.CallbackQuery, bot: Bot):
             # Отключаем превью, чтобы не было лишних картинок под текстом
             link_preview_options=LinkPreviewOptions(is_disabled=True),
             reply_markup=back_main_menu_markup,
+        )
+        print(f'{callback.from_user.id=}')
+        await log_action(
+            session=session,
+            tg_id=user_id,
+            action_type="free_guide"  # Вернет "road_trip_guide"
         )
         await callback.answer()
     else:
