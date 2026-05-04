@@ -12,6 +12,7 @@ from handlers.free_guide import free_quide_router
 from handlers.road_trip_guide import road_trip_quide_router
 from handlers.payments import payments_router
 from handlers.question_before_purchase import question_before_purchase_router
+from handlers.question_payment_method import question_payment_method_router
 # Bot token can be obtained via https://t.me/BotFather
 from middlewares import DbSessionMiddleware
 
@@ -28,6 +29,7 @@ async def main() -> None:
         road_trip_quide_router,
         payments_router,
         question_before_purchase_router,
+        question_payment_method_router,
     )
     engine = create_async_engine("sqlite+aiosqlite:///db.sqlite3", echo=True)
     session_pool = async_sessionmaker(engine, expire_on_commit=False)
@@ -40,7 +42,12 @@ async def main() -> None:
         session=aiohttpsession,
         # default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
-    await dp.start_polling(bot)
+    try:
+        await dp.start_polling(bot)
+    finally:
+        # Корректное закрытие сессий при остановке
+        await bot.session.close()
+        await engine.dispose()
 
 
 if __name__ == "__main__":
