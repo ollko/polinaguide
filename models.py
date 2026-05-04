@@ -2,7 +2,7 @@ from datetime import datetime
 from os import getenv
 from typing import List
 
-from sqlalchemy import BigInteger, String, ForeignKey, DateTime, Text, func
+from sqlalchemy import Integer, BigInteger, String, ForeignKey, DateTime, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
 
@@ -48,6 +48,9 @@ class Action(Base):
         ForeignKey('user.id', ondelete='CASCADE'))
     action_type: Mapped[str] = mapped_column(
         String)  # "free_guide", "buy_guide"
+    price: Mapped[int] = mapped_column(Integer, nullable=True)
+    currency: Mapped[str] = mapped_column(String, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now()
