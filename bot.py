@@ -1,10 +1,11 @@
-import asyncio
 import logging
+import os
 import sys
-from os import getenv
 
-from aiogram import Bot, Dispatcher
+from aiohttp import web
+from aiogram import Bot, Dispatcher, Router
 from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from handlers.start import start_router
@@ -13,16 +14,33 @@ from handlers.road_trip_guide import road_trip_quide_router
 from handlers.payments import payments_router
 from handlers.question_before_purchase import question_before_purchase_router
 from handlers.question_payment_method import question_payment_method_router
-# Bot token can be obtained via https://t.me/BotFather
 from middlewares import DbSessionMiddleware
+from handlers.tribute import tribute_webhook_handler
 
-TOKEN = getenv("BOT_TOKEN")
+TOKEN = os.getenv("BOT_TOKEN")
 
-# All handlers should be attached to the Router (or Dispatcher)
+WEB_SERVER_HOST = os.getenv("WEB_SERVER_HOST")
+WEB_SERVER_PORT = os.getenv("WEB_SERVER_PORT")
+
+BASE_WEBHOOK_URL = os.getenv("BASE_WEBHOOK_URL")
+WEBHOOK_PATH = "/webhook"
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
+TRIBUTE_API_TOKEN = os.getenv("TRIBUTE_API_TOKEN")
 
 
-async def main() -> None:
+router = Router()
+
+
+async def on_startup(bot: Bot) -> None:
+    await bot.set_webhook(
+        f"{BASE_WEBHOOK_URL}{WEBHOOK_PATH}",
+        secret_token=WEBHOOK_SECRET,
+    )
+
+
+def main() -> None:
     dp = Dispatcher()
+
     dp.include_routers(
         start_router,
         free_quide_router,
@@ -31,25 +49,44 @@ async def main() -> None:
         question_before_purchase_router,
         question_payment_method_router,
     )
+
     engine = create_async_engine("sqlite+aiosqlite:///db.sqlite3", echo=True)
     session_pool = async_sessionmaker(engine, expire_on_commit=False)
 
     dp.update.middleware(DbSessionMiddleware(session_pool=session_pool))
 
+    # Register startup hook to initialize webhook
+    dp.startup.register(on_startup)
+
     aiohttpsession = AiohttpSession(proxy='socks5://127.0.0.1:10808')
     bot = Bot(
         token=TOKEN,
         session=aiohttpsession,
-        # default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
-    try:
-        await dp.start_polling(bot)
-    finally:
-        # Корректное закрытие сессий при остановке
-        await bot.session.close()
-        await engine.dispose()
+
+    app = web.Application()
+    app['bot'] = bot
+    # Create an instance of request handler,
+    # aiogram has few implementations for different cases of usage
+    # In this example we use SimpleRequestHandler which is designed to handle simple cases
+    webhook_requests_handler = SimpleRequestHandler(
+        dispatcher=dp,
+        bot=bot,
+        secret_token=WEBHOOK_SECRET,
+    )
+    # Register webhook handler on application
+    webhook_requests_handler.register(app, path=WEBHOOK_PATH)
+
+    # Add router for tribute
+    app.add_routes([web.post("/webhook/tribute", tribute_webhook_handler)])
+
+    # Mount dispatcher startup and shutdown hooks to aiohttp application
+    setup_application(app, dp, bot=bot)
+
+    # And finally start webserver
+    web.run_app(app, host="127.0.0.1", port=8080,)
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-    asyncio.run(main())
+    main()

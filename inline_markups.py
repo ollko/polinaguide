@@ -49,7 +49,7 @@ buy_a_guide_btn = InlineKeyboardButton(
 )
 pay_tribute_btn = InlineKeyboardButton(
     text='Оплатить через Телеграм',
-    callback_data='pay_tribute'
+    url='https://t.me/tribute/app?startapp=pvmW'
 )
 
 pay_yookassa_btn = InlineKeyboardButton(

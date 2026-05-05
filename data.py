@@ -1,17 +1,17 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
-from models import User, Action, SupportTicket
+from models import async_session, User, Action, SupportTicket, Payment, ActionType
 
 
-async def create_or_update_user(session: AsyncSession, tg_id: int, username: str = None):
+async def create_or_update_user(session: AsyncSession, tg_id: int, username: str = None) -> bool:
     query = select(User).where(User.tg_id == tg_id)
     result = await session.execute(query)
     user = result.scalar_one_or_none()
-
+    print(f'{type(tg_id)=} {username=}')
     if not user:
         new_user = User(
             tg_id=tg_id,
-            username=username
+            username=username,
         )
         session.add(new_user)
         await session.commit()
@@ -83,3 +83,67 @@ async def log_action(
     )
     session.add(new_action)
     await session.commit()
+
+
+async def create_payment_and_action(
+        payload: dict,
+):
+
+    tg_id = payload.get("telegram_user_id")
+    trans_id = str(payload.get("transaction_id"))
+    trb_user_id = payload.get("trb_user_id")
+    async with async_session() as session:
+        # 1. Идемпотентность: проверяем, нет ли уже такого платежа
+        stmt = select(Payment).where(Payment.external_id == trans_id)
+        existing_payment = await session.scalar(stmt)
+
+        if existing_payment:
+            print(f"Платеж {trans_id} уже обработан.")
+            return dict(text="OK", status=200)
+
+        stmt_user = select(User).where(User.tg_id == tg_id)
+        user = await session.scalar(stmt_user)
+
+        if not user:
+            print(f"Ошибка: Пользователь {tg_id} не найден в БД!")
+            # Можно создать пользователя "на лету", если нужно
+            return dict(text="User not found", status=200)
+        if user and not user.trb_user_id:
+            user.trb_user_id = trb_user_id
+
+        try:
+            product_id = str(payload.get("product_id", "unknown"))
+            new_payment = Payment(
+                user_id=user.id,
+                external_id=trans_id,
+                product_name=payload.get("product_name", "Без названия"),
+                product_id=product_id,
+                amount=payload.get("amount"),
+                currency=payload.get("currency")
+            )
+            session.add(new_payment)
+            await session.flush()
+            print('after session.flush')
+
+            new_action = Action(
+                user_id=user.id,
+                action_type=ActionType.PURCHASE,
+                payment_id=new_payment.id,
+                details=f"Куплен товар: {new_payment.product_name}"
+            )
+            session.add(new_action)
+
+            await session.commit()
+            return dict(
+                text="OK",
+                status=200,
+                product_id=product_id,
+                user_id=tg_id,
+            )
+            # 6. ВЫДАЧА ТОВАРА (через бота)
+            # await bot.send_document(tg_id, ...)
+
+        except Exception as e:
+            await session.rollback()
+            print(f"Ошибка при сохранении в БД: {e}")
+            return dict(text="DB Error", status=200)
