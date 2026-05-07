@@ -27,20 +27,6 @@ async def buy_a_guide(callback: types.CallbackQuery):
         payload="road_trip_guide",  # Внутренняя пометка для бота
         currency="XTR",         # XTR — это Звезды (Stars)
         prices=[types.LabeledPrice(label="Гайд", amount=1)],  # Цена в звездах
-        # reply_markup=types.InlineKeyboardMarkup(
-        #     inline_keyboard=[
-        #         [
-        #             types.InlineKeyboardButton(
-        #                 text="Оплатить ⭐️",
-        #                 pay=True),
-        #         ],
-        #         [
-        #             types.InlineKeyboardButton(
-        #                 text="👈🏼 Назад в меню",
-        #                 callback_data="main_menu")
-        #         ],
-        #     ]
-        # )
     )
     await callback.message.delete()
     await callback.answer()
