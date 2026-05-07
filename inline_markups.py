@@ -36,7 +36,7 @@ who_is_not_suitable_btn = InlineKeyboardButton(
     callback_data='who_is_not_suitable'
 )
 question_before_purchase_btn = InlineKeyboardButton(
-    text='Задать вопрос перед покупкой',
+    text='Задать свой вопрос перед покупкой',
     callback_data='ask_question_start'
 )
 buy_a_guide_btn = InlineKeyboardButton(
@@ -62,9 +62,9 @@ greating_markup = InlineKeyboardMarkup(
 whats_in_depth_markup = InlineKeyboardMarkup(
     inline_keyboard=[
         [buy_a_guide_btn,],
-        [question_before_purchase_btn],
         [suitable_for_whom_btn, who_is_not_suitable_btn],
         [whats_inside_btn,],
+        [question_before_purchase_btn],
         [back_to_main_meny_btn],
     ]
 )
