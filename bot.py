@@ -13,7 +13,6 @@ from handlers.free_guide import free_quide_router
 from handlers.road_trip_guide import road_trip_quide_router
 from handlers.payments import payments_router
 from handlers.question_before_purchase import question_before_purchase_router
-from handlers.question_payment_method import question_payment_method_router
 from middlewares import DbSessionMiddleware
 from handlers.tribute import tribute_webhook_handler
 
@@ -47,7 +46,6 @@ def main() -> None:
         road_trip_quide_router,
         payments_router,
         question_before_purchase_router,
-        question_payment_method_router,
     )
 
     engine = create_async_engine("sqlite+aiosqlite:///db.sqlite3", echo=True)

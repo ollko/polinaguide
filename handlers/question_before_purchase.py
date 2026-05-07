@@ -35,6 +35,9 @@ async def ask_question_start(
     callback: CallbackQuery,
     state: FSMContext
 ):
+    '''Обрабатывает кнопку << задать вопрос перед покупкой >>
+    Добавляет состояние ожидание вопроса ( state.waiting_for_question )
+    '''
     # Создаем кнопку отмены
     cancel_kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
@@ -55,7 +58,10 @@ async def cancel_question(callback: CallbackQuery, state: FSMContext):
         return
 
     await state.clear()
-    await callback.message.edit_text("Отправка вопроса отменена.")
+    await callback.message.edit_text(
+        "Отправка вопроса отменена.",
+        reply_markup=None
+    )
     await callback.answer()
 
 
@@ -66,6 +72,8 @@ async def forward_question_to_admin(
     bot: Bot, session:
     AsyncSession,
 ):
+    '''
+    '''
     ticket_id = await save_question(session, message.from_user.id, message.text)
 
     # Отправляем админу

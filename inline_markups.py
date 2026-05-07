@@ -36,12 +36,8 @@ who_is_not_suitable_btn = InlineKeyboardButton(
     callback_data='who_is_not_suitable'
 )
 question_before_purchase_btn = InlineKeyboardButton(
-    text='Задать свой вопрос перед покупкой',
+    text='Задать вопрос перед покупкой',
     callback_data='ask_question_start'
-)
-question_about_payment_btn = InlineKeyboardButton(
-    text='Удобнее другой способ?',
-    callback_data='ask_payment_method_start'
 )
 buy_a_guide_btn = InlineKeyboardButton(
     text='Купить гайд',
@@ -49,7 +45,7 @@ buy_a_guide_btn = InlineKeyboardButton(
 )
 pay_tribute_btn = InlineKeyboardButton(
     text='Оплатить через Телеграм',
-    url='https://t.me/tribute/app?startapp=pvmW'
+    url='https://t.me/tribute/app?startapp=pvzA'
 )
 
 pay_yookassa_btn = InlineKeyboardButton(
@@ -66,6 +62,7 @@ greating_markup = InlineKeyboardMarkup(
 whats_in_depth_markup = InlineKeyboardMarkup(
     inline_keyboard=[
         [buy_a_guide_btn,],
+        [question_before_purchase_btn],
         [suitable_for_whom_btn, who_is_not_suitable_btn],
         [whats_inside_btn,],
         [back_to_main_meny_btn],
@@ -93,8 +90,6 @@ buy_a_guide_markup = InlineKeyboardMarkup(
     inline_keyboard=[
         [pay_tribute_btn],
         [pay_yookassa_btn],
-        [question_about_payment_btn],
-
     ]
 )
 
