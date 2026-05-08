@@ -10,4 +10,4 @@ run:
   persistenceMount: /data
   containerPort: 80
   servicePort: 80
-  command: alembic upgrage head && python3.11 bot.py
+  command: alembic upgrade head && python3.11 bot.py
