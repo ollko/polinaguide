@@ -24,7 +24,7 @@ BASE_WEBHOOK_URL = os.getenv("BASE_WEBHOOK_URL")
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 TRIBUTE_API_TOKEN = os.getenv("TRIBUTE_API_TOKEN")
-
+DB_URL = os.getenv("DB_URL")
 
 router = Router()
 
@@ -47,7 +47,7 @@ def main() -> None:
         question_before_purchase_router,
     )
 
-    engine = create_async_engine("sqlite+aiosqlite:///db.sqlite3", echo=True)
+    engine = create_async_engine(DB_URL, echo=True)
     session_pool = async_sessionmaker(engine, expire_on_commit=False)
 
     dp.update.middleware(DbSessionMiddleware(session_pool=session_pool))
