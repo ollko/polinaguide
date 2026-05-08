@@ -7,8 +7,7 @@ build:
   requirementsPath: requirements.txt
   useCache: true
 run:
-  scriptName: bot.py
-  command: null
   persistenceMount: /data
-  containerPort: "80"
-  servicePort: "80"
+  containerPort: 80
+  servicePort: 80
+  command: alembic upgrage head && python3.11 bot.py
