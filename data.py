@@ -147,3 +147,49 @@ async def create_payment_and_action(
             await session.rollback()
             print(f"Ошибка при сохранении в БД: {e}")
             return dict(text="DB Error", status=200)
+
+
+async def create_payment_and_action_yookassa(
+        tg_id: int | str,
+        external_id: str,
+        product_name: str,
+        product_id: str,
+        amount: int,  # в копейках
+        currency: str,
+        details_str: str,
+
+):
+
+    async with async_session() as session:
+
+        stmt_user = select(User).where(User.tg_id == tg_id)
+        user = await session.scalar(stmt_user)
+
+        if not user:
+            print(f"Ошибка: Пользователь {tg_id} не найден в БД!")
+            # Можно создать пользователя "на лету", если нужно
+            return
+        else:
+            new_payment = Payment(
+                user_id=user.id,  # Предполагаем, что id в таблице User равен tg_id
+                external_id=external_id,
+                product_name=product_name,
+                product_id=product_id,
+                amount=amount,  # в копейках
+                currency=currency
+            )
+
+            session.add(new_payment)
+            await session.flush()
+
+            new_action = Action(
+                user_id=user.id,
+                action_type=ActionType.PURCHASE,  # Твой Enum элемент для покупок
+                payment_id=new_payment.id,
+                details=details_str
+            )
+            session.add(new_action)
+
+            await session.commit()
+
+            return dict(text="OK", status=200)

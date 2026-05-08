@@ -3,8 +3,11 @@ from os import getenv
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram import Router, types, F
 
-from data import log_action
+from data import create_payment_and_action_yookassa
 from inline_markups import *
+from models import Action, ActionType, Payment
+from products import PRODUCTS
+
 payments_router = Router()
 
 YOOKASSA_TOKEN = getenv("YOOKASSA_TOKEN")
@@ -19,31 +22,35 @@ async def select_payment_method(callback: types.CallbackQuery):
     await callback.answer()
 
 
-@payments_router.callback_query(F.data == "pay_stars")
-async def buy_a_guide(callback: types.CallbackQuery):
-    await callback.message.answer_invoice(
-        title="Гайд по Западной Сербии",
-        description="Полный маршрут: локации, отели и советы.",
-        payload="road_trip_guide",  # Внутренняя пометка для бота
-        currency="XTR",         # XTR — это Звезды (Stars)
-        prices=[types.LabeledPrice(label="Гайд", amount=1)],  # Цена в звездах
-    )
-    await callback.message.delete()
-    await callback.answer()
+@payments_router.callback_query(F.data.startswith("pay_yookassa:"))
+async def buy_via_yookassa(
+    callback: types.CallbackQuery,
+):
+    product_key = callback.data.split(":")[1]
 
+    if product_key not in PRODUCTS:
+        await callback.answer("Товар не найден!", show_alert=True)
+        return
 
-@payments_router.callback_query(F.data == "pay_yookassa")
-async def buy_via_yookassa(callback: types.CallbackQuery):
-    print(f'{YOOKASSA_TOKEN=}')
+    product = PRODUCTS[product_key]
+
+    if product.amount <= 0:
+        await callback.answer("Этот материал бесплатный, его можно скачать сразу!", show_alert=True)
+        # Здесь можно сразу выдать ссылку: await callback.message.answer(product.link)
+        return
+
     await callback.message.answer_invoice(
-        title="Гайд по Западной Сербии",
+        title=product.products_name,
         description="Оплата через ЮKassa банковской картой.",
-        payload="road_trip_guide",
+        payload=product.yookassa_products_id,
         provider_token=YOOKASSA_TOKEN,  # ОБЯЗАТЕЛЬНО для ЮKassa
         currency="RUB",                # Фиатная валюта
-        # Сумма в копейках (100.00 руб)
-        prices=[types.LabeledPrice(label="Гайд", amount=10000)],
-        start_parameter="guide_payment"
+        prices=[types.LabeledPrice(
+            label="Путеводитель",
+            amount=product.amount
+        )
+        ],
+        start_parameter=f"pay_{product_key}"
     )
     await callback.message.delete()
     await callback.answer()
@@ -57,38 +64,44 @@ async def process_pre_checkout_query(pre_checkout_query: types.PreCheckoutQuery)
 @payments_router.message(F.successful_payment)
 async def process_successful_payment(message: types.Message, session: AsyncSession):
     # Проверяем, за какой именно товар заплатили (из payload в invoice)
-
     payment = message.successful_payment
-    total_amount = payment.total_amount
+
     tg_id = message.from_user.id
-    action_type = payment.invoice_payload
-    currency = payment.currency
 
-    # Определяем, как именно оплатил пользователь для красивого сообщения
-    # Проверяем, какой товар был оплачен через payload
-    if payment.invoice_payload == "road_trip_guide":
-        # Логика выдачи гайда
+    product_key = payment.invoice_payload
 
-        if payment.currency == "XTR":
-            method_name = "Telegram Stars"
-            amount_str = f"{payment.total_amount} ⭐️"
-            price = total_amount
-        else:
-            method_name = "ЮКасса"
-            # перевод из копеек
-            price = total_amount/100
-            amount_str = f"{payment.total_amount / 100} руб."
+    product = PRODUCTS.get(product_key)
 
-        await log_action(
-            session=session,
-            tg_id=tg_id,
-            action_type=action_type,
-            currency=currency,
-            price=price,
+    db_product_name = product.products_name if product else f"Неизвестный товар ({product_key})"
 
-        )
+    values = dict(
+        tg_id=tg_id,
+        external_id=payment.provider_payment_charge_id,
+        product_name=db_product_name,
+        product_id=product_key,
+        amount=payment.total_amount,  # в копейках
+        currency=payment.currency,
+        details_str=f"Купил путеводитель '{db_product_name}' через ЮKassa"
+
+    )
+
+    await create_payment_and_action_yookassa(**values)
+
+    if not product:
         await message.answer(
-            f"Оплата успешно получена через {method_name}!\n"
-            f"Сумма: {amount_str}\n\n"
-            f"📍 Лови твой гайд по Западной Сербии: [ССЫЛКА_ИЛИ_ФАЙЛ]"
+            "Оплата прошла успешно, но возникла ошибка при определении товара. "
+            "Пожалуйста, свяжитесь с поддержкой."
         )
+        return
+
+    price = payment.total_amount / 100
+    amount_str = f"{price} руб."
+
+    await message.answer(
+        f"💳 Оплата успешно получена через ЮKassa!\n"
+        f"Сумма: {amount_str}\n\n"
+        f"🎉 Спасибо за покупку путеводителя «{product.products_name}»!\n\n"
+        f"📍 Скачать гайд по ссылке:\n{product.link}",
+        # Актуальный способ включить превью ссылки в aiogram 3.x
+        link_preview_options=types.LinkPreviewOptions(is_disabled=False)
+    )

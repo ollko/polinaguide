@@ -50,7 +50,7 @@ pay_tribute_btn = InlineKeyboardButton(
 
 pay_yookassa_btn = InlineKeyboardButton(
     text='Оплатить картой (ЮKassa)',
-    callback_data='pay_yookassa'
+    callback_data='pay_yookassa:guide_1'
 )
 
 greating_markup = InlineKeyboardMarkup(
@@ -90,6 +90,10 @@ buy_a_guide_markup = InlineKeyboardMarkup(
     inline_keyboard=[
         [pay_tribute_btn],
         [pay_yookassa_btn],
+        [InlineKeyboardButton(
+            text='👈🏼 Вернуться',
+            callback_data='road_trip_guide'
+        )]
     ]
 )
 
