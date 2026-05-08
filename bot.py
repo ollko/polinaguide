@@ -4,7 +4,6 @@ import sys
 
 from aiohttp import web
 from aiogram import Bot, Dispatcher, Router
-from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
@@ -56,10 +55,8 @@ def main() -> None:
     # Register startup hook to initialize webhook
     dp.startup.register(on_startup)
 
-    aiohttpsession = AiohttpSession(proxy='socks5://127.0.0.1:10808')
     bot = Bot(
         token=TOKEN,
-        session=aiohttpsession,
     )
 
     app = web.Application()
