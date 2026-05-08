@@ -8,6 +8,6 @@ build:
   useCache: true
 run:
   persistenceMount: /data
-  containerPort: 80
-  servicePort: 80
   command: alembic upgrade head && python3.11 bot.py
+  containerPort: 8080
+  servicePort: 80
