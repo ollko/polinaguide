@@ -15,5 +15,11 @@ PRODUCTS = {
         "guide_1",
         "https://drive.google.com/file/d/1RqhHPJ9YxCj2ZZBI7lLO-v4tCVN5GBUQ/view",
         10000,
-    )
+    ),
+    "Западная Сербия на машине": Product(
+        'Путеводитель "Западная Сербия на машине: по лучшим местам за 3 дня."',
+        "guide_1",
+        "https://drive.google.com/file/d/1RqhHPJ9YxCj2ZZBI7lLO-v4tCVN5GBUQ/view",
+        0,
+    ),
 }

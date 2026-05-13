@@ -10,10 +10,10 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from handlers.start import start_router
 from handlers.free_guide import free_quide_router
 from handlers.road_trip_guide import road_trip_quide_router
-from handlers.payments import payments_router
+from handlers.yookassa_payments import payments_router
 from handlers.question_before_purchase import question_before_purchase_router
 from middlewares import DbSessionMiddleware
-from handlers.tribute import tribute_webhook_handler
+from handlers.tribute_payments import tribute_webhook_handler
 
 TOKEN = os.getenv("BOT_TOKEN")
 

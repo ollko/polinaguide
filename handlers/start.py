@@ -5,12 +5,8 @@ from aiogram.filters.command import CommandStart
 from aiogram.filters.chat_member_updated import ChatMemberUpdatedFilter, MEMBER, KICKED
 from aiogram.types import ChatMemberUpdated, Message, CallbackQuery
 
-from sqlalchemy.ext.asyncio import AsyncSession
+import data
 
-from data import (
-    create_or_update_user,
-    update_user_status,
-)
 from texts import (
     GREATING_TEXT,
 )
@@ -20,12 +16,11 @@ start_router = Router()
 
 @start_router.callback_query(F.data == "main_menu")
 @start_router.message(CommandStart())
-async def start(event: Union[Message, CallbackQuery], session: AsyncSession):
+async def start(event: Union[Message, CallbackQuery]):
     user = event.from_user
     text_to_send = GREATING_TEXT
 
-    await create_or_update_user(
-        session=session,
+    await data.create_or_update_user(
         tg_id=user.id,
         username=user.username
     )
@@ -45,12 +40,12 @@ async def start(event: Union[Message, CallbackQuery], session: AsyncSession):
 
 
 @start_router.my_chat_member(ChatMemberUpdatedFilter(member_status_changed=KICKED))
-async def on_user_blocked(event: ChatMemberUpdated, session: AsyncSession):
+async def on_user_blocked(event: ChatMemberUpdated):
     '''Handler will be triggered when the status changes to 'kicked' (the user has blocked the bot)'''
-    await update_user_status(session, event.from_user.id, "blocked")
+    await data.update_user_status(event.from_user.id, "blocked")
 
 
 @start_router.my_chat_member(ChatMemberUpdatedFilter(member_status_changed=MEMBER))
-async def on_user_unblocked(event: ChatMemberUpdated, session: AsyncSession):
+async def on_user_unblocked(event: ChatMemberUpdated):
     '''The handler will be triggered when the user has unblocked the bot back.'''
-    await update_user_status(session, event.from_user.id, "active")
+    await data.update_user_status(event.from_user.id, "active")
