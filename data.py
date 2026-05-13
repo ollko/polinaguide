@@ -14,7 +14,7 @@ from models import (
     TributePayment,
     ActionType
 )
-
+from products import PRODUCTS
 
 engine = create_async_engine(os.environ['DB_URL'], echo=False)
 Session = async_sessionmaker(engine)
@@ -230,7 +230,7 @@ async def get_user_ids_for_notify():
         stmt = '''
         SELECT tg_id, created_at
         FROM action
-        WHERE 
+        WHERE
             action_type='start'
             AND datetime(created_at, 'utc') > datetime('now', '-10 days')
             AND tg_id NOT IN (
@@ -239,3 +239,30 @@ async def get_user_ids_for_notify():
         '''
         result = await session.execute(text(stmt))
         return result.all()
+
+
+async def get_purchased_products(user_id) -> str:
+    async with async_session() as session:
+        stmt = select(TributePayment.product_name).where(
+            TributePayment.telegram_user_id == user_id)
+        result = await session.scalars(stmt)
+
+        # Получаем список всех названий продуктов (скаляров)
+        purchased_products = result.all()
+
+        stmt = select(YookassaPayment.invoice_payload).where(
+            YookassaPayment.user_id == user_id)
+        result = await session.scalars(stmt)
+
+        purchased_products_y = result.all()
+
+        purchased_products = list(purchased_products) + \
+            list(purchased_products_y)
+        print(f'{purchased_products=}')
+        if not purchased_products:
+            return "😔 У вас пока нет купленных гайдов."
+
+        else:
+            guides_list = "\n".join(
+                [f"• {name}\n 📍 Скачать гайд по ссылке:\n{PRODUCTS[name].link}" for name in purchased_products])
+            return f"📚 Список ваших гайдов:\n\n{guides_list}"

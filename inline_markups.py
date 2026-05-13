@@ -50,7 +50,7 @@ pay_tribute_btn = InlineKeyboardButton(
 
 pay_yookassa_btn = InlineKeyboardButton(
     text='Оплатить картой (ЮKassa)',
-    callback_data='pay_yookassa:guide_1'
+    callback_data='pay_yookassa:Западная Сербия на машине'
 )
 
 greating_markup = InlineKeyboardMarkup(
