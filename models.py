@@ -69,12 +69,12 @@ class YookassaPayment(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(
         ForeignKey('user.tg_id', ondelete='SET NULL'))
-    currency: Mapped[str] = mapped_column(String(3))
+    currency: Mapped[str] = mapped_column(String)
 
     total_amount: Mapped[int] = mapped_column(Integer)
-    invoice_payload: Mapped[str] = mapped_column(String(50))
-    telegram_payment_charge_id:  Mapped[str] = mapped_column(String(32))
-    provider_payment_charge_id: Mapped[str] = mapped_column(String(40))
+    invoice_payload: Mapped[str] = mapped_column(String)
+    telegram_payment_charge_id:  Mapped[str] = mapped_column(String)
+    provider_payment_charge_id: Mapped[str] = mapped_column(String)
 
     user: Mapped["User"] = relationship(back_populates="yookassa_payments")
 
@@ -84,19 +84,19 @@ class TributePayment(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     amount: Mapped[int] = mapped_column(Integer)
-    currency: Mapped[str] = mapped_column(String(3))
+    currency: Mapped[str] = mapped_column(String)
 
     product_id: Mapped[int] = mapped_column(Integer)
-    product_name: Mapped[str] = mapped_column(String(50))
+    product_name: Mapped[str] = mapped_column(String)
     purchase_created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True))
     purchase_id: Mapped[int] = mapped_column(Integer)
     telegram_user_id: Mapped[int] = mapped_column(
         ForeignKey('user.tg_id', ondelete='SET NULL'))
     telegram_username: Mapped[Optional[str]] = mapped_column(
-        String(50), nullable=True)
+        String, nullable=True)
     transaction_id: Mapped[int] = mapped_column(Integer)
-    trb_user_id: Mapped[str] = mapped_column(String(10))
+    trb_user_id: Mapped[str] = mapped_column(String)
     user_id: Mapped[int] = mapped_column(Integer)
 
     user: Mapped["User"] = relationship(back_populates="tribute_payments")
@@ -117,7 +117,7 @@ class Action(Base):
         DateTime(timezone=True),
         server_default=func.now()
     )
-    details: Mapped[str] = mapped_column(String(100))
+    details: Mapped[str] = mapped_column(String)
 
     user: Mapped["User"] = relationship(back_populates="actions")
 
