@@ -113,6 +113,8 @@ class Action(Base):
         Enum(ActionType, native_enum=False),
         index=True,
     )
+    product_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey('product.id', ondelete='SET NULL'))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now()
@@ -140,3 +142,28 @@ class SupportTicket(Base):
         nullable=True,
     )
     user: Mapped["User"] = relationship(back_populates="support_tickets")
+
+
+class Product(Base):
+    __tablename__ = "product"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    products_name: Mapped[str] = mapped_column(
+        unique=True)  # назвение товара в Tribute
+    description: Mapped[Optional[str]]
+    url: Mapped[str]
+    free: Mapped[bool] = mapped_column(server_default="true")
+    yookassa_total_amount: Mapped[Optional[int]]
+
+    @property
+    def invoice_payload(self):
+        return f'guide_{self.id}'
+
+
+class Notification(Base):
+    __tablename__ = "notification"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey('product.id', ondelete='SET NULL'))
+    day_delta: Mapped[int]
+    notification: Mapped[str]
