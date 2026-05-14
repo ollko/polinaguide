@@ -1,3 +1,4 @@
+from collections import namedtuple
 import os
 from datetime import datetime
 
@@ -14,10 +15,37 @@ from models import (
     TributePayment,
     ActionType
 )
-from products import PRODUCTS
 
 engine = create_async_engine(os.environ['DB_URL'], echo=False)
 Session = async_sessionmaker(engine)
+
+
+Product = namedtuple(
+    "Product", ["products_name", "yookassa_products_id", "link", "free", "amount"])
+
+PRODUCTS = {
+    'Настоящая Сербия': Product(
+        'Настоящая Сербия: где природа чарует.',
+        "free_guide_1",
+        "https://drive.google.com/file/d/1cnhBYRJuYmCvBdblAfD9qEfTz7X86Zng/view",
+        True,
+        None,
+    ),
+    "guide_1": Product(
+        'Путеводитель "Западная Сербия на машине: по лучшим местам за 3 дня."',
+        "guide_1",
+        "https://drive.google.com/file/d/1RqhHPJ9YxCj2ZZBI7lLO-v4tCVN5GBUQ/view",
+        False,
+        10000,
+    ),
+    "Западная Сербия на машине": Product(
+        'Путеводитель "Западная Сербия на машине: по лучшим местам за 3 дня."',
+        "guide_1",
+        "https://drive.google.com/file/d/1RqhHPJ9YxCj2ZZBI7lLO-v4tCVN5GBUQ/view",
+        False,
+        10000,
+    ),
+}
 
 
 async def create_or_update_user(tg_id: int, username: str = None) -> bool:
@@ -161,29 +189,6 @@ async def create_tribute_payment(
             currency=currency,
         )
 
-#             new_action = Action(
-#                 user_id=user.id,
-#                 action_type=ActionType.PURCHASE,
-#                 payment_id=new_payment.id,
-#                 details=f"Куплен товар: {new_payment.product_name}"
-#             )
-#             session.add(new_action)
-
-#             await session.commit()
-#             return dict(
-#                 text="OK",
-#                 status=200,
-#                 product_id=product_id,
-#                 user_id=tg_id,
-#             )
-#             # 6. ВЫДАЧА ТОВАРА (через бота)
-#             # await bot.send_document(tg_id, ...)
-
-#         except Exception as e:
-#             await session.rollback()
-#             print(f"Ошибка при сохранении в БД: {e}")
-#             return dict(text="DB Error", status=200)
-
 
 async def create_yookassa_payment(
         tg_id: int | str,
@@ -225,44 +230,62 @@ async def create_action(
         return new_action_id
 
 
-async def get_user_ids_for_notify():
-    async with async_session() as session:
-        stmt = '''
-        SELECT tg_id, created_at
-        FROM action
-        WHERE
-            action_type='start'
-            AND datetime(created_at, 'utc') > datetime('now', '-10 days')
-            AND tg_id NOT IN (
-                SELECT tg_id FROM action WHERE action_type='purchase'
-            )
-        '''
-        result = await session.execute(text(stmt))
-        return result.all()
+def get_products(ids):
+    result = []
+    for id in ids:
+        if id in PRODUCTS:
+            result.append(PRODUCTS[id])
+    return result
 
 
-async def get_purchased_products(user_id) -> str:
+async def get_purchased_products(user_id) -> list['Product']:
     async with async_session() as session:
         stmt = select(TributePayment.product_name).where(
             TributePayment.telegram_user_id == user_id)
         result = await session.scalars(stmt)
 
         # Получаем список всех названий продуктов (скаляров)
-        purchased_products = result.all()
+        purchased_tribute = result.all()
 
         stmt = select(YookassaPayment.invoice_payload).where(
             YookassaPayment.user_id == user_id)
         result = await session.scalars(stmt)
 
-        purchased_products_y = result.all()
+        purchased_yookassa = result.all()
 
-        purchased_products = list(purchased_products) + \
-            list(purchased_products_y)
-        print(f'{purchased_products=}')
-        if not purchased_products:
-            return "😔 У вас пока нет купленных гайдов."
+        product_ids = list(purchased_tribute) + \
+            list(purchased_yookassa)
 
-        else:
-            guides_list = "\n".join(
-                [f"• {name}\n 📍 Скачать гайд по ссылке:\n{PRODUCTS[name].link}" for name in purchased_products])
-            return f"📚 Список ваших гайдов:\n\n{guides_list}"
+        return get_products(product_ids)
+
+
+async def get_free_products():
+    result = []
+    for _, v in PRODUCTS.items():
+        if v.free:
+            result.append(v)
+    return result
+
+
+async def get_users_who_did_not_buy_raw(session: AsyncSession):
+    # Вставляем один из SQL-запросов (см. ниже)
+    sql_query = """
+    SELECT 
+        a.tg_id, 
+        n.notification
+    FROM action a
+    JOIN notification n ON n.product_id = a.product_id
+    WHERE a.action_type = 'START'
+    -- Вычисляем разницу в днях (текущая дата минус дата создания экшена)
+    AND CAST(JULIANDAY('now') - JULIANDAY(a.created_at) AS INTEGER) = n.day_delta
+    -- Исключаем тех, кто в итоге купил этот гайд
+    AND NOT EXISTS (
+        SELECT 1 
+        FROM action ap
+        WHERE ap.tg_id = a.tg_id
+            AND ap.product_id = n.product_id
+            AND ap.action_type = 'PURCHASE'
+    );
+    """
+    result = await session.execute(text(sql_query))
+    return result.all()
