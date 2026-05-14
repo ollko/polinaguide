@@ -1,3 +1,4 @@
+from aiogram.types import BotCommand, BotCommandScopeDefault
 import logging
 import os
 import sys
@@ -16,7 +17,6 @@ from handlers.yookassa_payments import payments_router
 from handlers.question_before_purchase import question_before_purchase_router
 from middlewares import DbSessionMiddleware
 from handlers.tribute_payments import tribute_webhook_handler
-from main_menu import set_main_menu
 
 TOKEN = os.getenv("BOT_TOKEN")
 
@@ -30,6 +30,19 @@ TRIBUTE_API_TOKEN = os.getenv("TRIBUTE_API_TOKEN")
 
 
 router = Router()
+
+
+async def set_main_menu(bot: Bot):
+    main_menu_commands = [
+        BotCommand(command='start', description='Начать работу с ботом'),
+        BotCommand(command='my_guides', description='Мои гайды'),
+        BotCommand(command='free_guides', description='Бесплатные гайды'),
+    ]
+
+    await bot.set_my_commands(
+        commands=main_menu_commands,
+        scope=BotCommandScopeDefault()
+    )
 
 
 async def on_startup(bot: Bot) -> None:
