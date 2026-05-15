@@ -44,12 +44,12 @@ buy_a_guide_btn = InlineKeyboardButton(
     callback_data='buy_a_guide'
 )
 pay_tribute_btn = InlineKeyboardButton(
-    text='Оплатить через Телеграм',
+    text='Оплатить через Телеграм 1900 RUB/22 EUR/2600 RSD',
     url='https://t.me/tribute/app?startapp=pvzA'
 )
 
 pay_yookassa_btn = InlineKeyboardButton(
-    text='Оплатить картой (ЮKassa)',
+    text='Оплатить картой (ЮKassa) 1900 RUB',
     callback_data='pay_yookassa:guide_1'
 )
 
