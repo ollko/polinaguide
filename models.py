@@ -153,6 +153,7 @@ class Product(Base):
     url: Mapped[str]
     free: Mapped[bool] = mapped_column(server_default="true")
     yookassa_total_amount: Mapped[Optional[int]]
+    pay_tribute_url: Mapped[Optional[str]]
 
     @property
     def invoice_payload(self):
