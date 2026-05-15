@@ -5,6 +5,7 @@ from aiogram.types import (
     InlineKeyboardMarkup,
 )
 
+from data import data
 channel_name = os.getenv("CHANNEL_NAME")
 channel_url = os.getenv("CHANNEL_URL")
 
@@ -55,6 +56,21 @@ pay_yookassa_btn = InlineKeyboardButton(
     text='Оплатить картой (ЮKassa)',
     callback_data='pay_yookassa:Западная Сербия на машине'
 )
+
+
+async def get_product_greating_markup():
+    products = await data.get_products_new()
+
+    product_btns = [
+        InlineKeyboardButton(
+            text=f'🚗 {p.description}',
+            callback_data=f'product:{p.id}')
+        for p in products
+
+    ]
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[btn] for btn in product_btns]
+    )
 
 greating_markup = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -113,7 +129,6 @@ back_to_get_free_guide_btn = InlineKeyboardButton(
     text='👈🏼 Вернуться и забрать  🎁',
     callback_data='free_guide'
 )
-
 
 suitable_for_whom_free_guide_btn = InlineKeyboardButton(
     text='Кому подойдёт',

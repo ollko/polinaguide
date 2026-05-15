@@ -10,7 +10,7 @@ import data.data as data
 from texts import (
     GREATING_TEXT,
 )
-from inline_markups import greating_markup
+from inline_markups import get_product_greating_markup
 start_router = Router()
 
 
@@ -19,7 +19,7 @@ start_router = Router()
 async def start(event: Union[Message, CallbackQuery]):
     user = event.from_user
     text_to_send = GREATING_TEXT
-
+    greating_markup = await get_product_greating_markup()
     await data.create_or_update_user(
         tg_id=user.id,
         username=user.username

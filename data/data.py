@@ -13,7 +13,8 @@ from models import (
     SupportTicket,
     YookassaPayment,
     TributePayment,
-    ActionType
+    ActionType,
+    Product as OrmProduct,
 )
 
 engine = create_async_engine(os.environ['DB_URL'], echo=False)
@@ -236,6 +237,20 @@ def get_products(ids):
         if id in PRODUCTS:
             result.append(PRODUCTS[id])
     return result
+
+
+async def get_products_new(ids: list[int] | None = None):
+    async with async_session() as session:
+        stmt = select(OrmProduct)
+        if ids:
+            stmt = stmt.where(OrmProduct.id.in_(ids))
+        result = await session.scalars(stmt)
+        return result.all()
+
+
+async def get_product_new(id: int):
+    async with async_session() as session:
+        return await session.get(OrmProduct, id)
 
 
 async def get_purchased_products(user_id) -> list['Product']:

@@ -147,13 +147,18 @@ class SupportTicket(Base):
 class Product(Base):
     __tablename__ = "product"
     id: Mapped[int] = mapped_column(primary_key=True)
-    products_name: Mapped[str] = mapped_column(
+    product_name: Mapped[str] = mapped_column(
         unique=True)  # назвение товара в Tribute
-    description: Mapped[Optional[str]]
-    url: Mapped[str]
+    description: Mapped[Optional[str]]  # на кнопке в greating
+    product_url: Mapped[str]
     free: Mapped[bool] = mapped_column(server_default="true")
     yookassa_total_amount: Mapped[Optional[int]]
     pay_tribute_url: Mapped[Optional[str]]
+
+    text: Mapped[str] = mapped_column(default='', server_default='')
+    suitable: Mapped[str] = mapped_column(default='', server_default='')
+    not_suitable: Mapped[str] = mapped_column(default='', server_default='')
+    what_inside: Mapped[str] = mapped_column(default='', server_default='')
 
     @property
     def invoice_payload(self):
