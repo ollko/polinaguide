@@ -1,9 +1,12 @@
-from os import environ
+import os
 
 from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
 )
+
+channel_name = os.getenv("CHANNEL_NAME")
+channel_url = os.getenv("CHANNEL_URL")
 
 
 back_to_main_meny_btn = InlineKeyboardButton(
@@ -98,7 +101,6 @@ buy_a_guide_markup = InlineKeyboardMarkup(
 )
 
 # free_guide
-CHANNEL_URL = environ.get("CHANNEL_URL")
 get_free_guide_btn = InlineKeyboardButton(
     text='Забрать гайд бесплатно 🎁',
     callback_data='get_free_guide'
@@ -118,8 +120,8 @@ suitable_for_whom_free_guide_btn = InlineKeyboardButton(
     callback_data='suitable_for_whom_free_guide'
 )
 subscribe_btn = InlineKeyboardButton(
-    text='🔗 Подписаться на мой канал',
-    url=CHANNEL_URL
+    text=f'🔗 {channel_name}',
+    url=channel_url
 )
 check_membership_btn = InlineKeyboardButton(
     text='Я подписался, проверяй',

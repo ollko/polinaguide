@@ -5,20 +5,20 @@ from aiogram.types import LinkPreviewOptions
 from aiogram.enums import ChatMemberStatus
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data import log_action
+import data.data as data
+from inline_markups import *
+from models import ActionType
+from data.data import PRODUCTS
 from texts import (
     I_WANT_A_FREE_GUIDE,
     WHATS_INSIDE_FREE_GUIDE,
     SUITABLE_FOR_WHOM_FREE_GUIDE,
 )
-from inline_markups import *
 
 free_quide_router = Router()
 
-CHANNEL_ID = environ.get("TEST_CHANNEL_ID")
-CHANNEL_URL = environ.get("CHANNEL_URL")
 
-FREE_GUIDE_LINK = environ.get("FREE_GUIDE_LINK")
+channel_id = environ.get("CHANNEL_ID")
 
 
 @free_quide_router.callback_query(F.data == "free_guide")
@@ -51,9 +51,9 @@ async def suitable_for_whom_free_guide(callback: types.CallbackQuery):
     await callback.answer()
 
 
-async def check_sub(bot: Bot, user_id: int) -> bool:
+async def check_channel_subscription(bot: Bot, user_id: int, channel_id: int) -> bool:
     try:
-        member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
+        member = await bot.get_chat_member(chat_id=channel_id, user_id=user_id)
         return member.status in ["member", "administrator", "creator"]
     except Exception:
         return False
@@ -74,7 +74,8 @@ async def handle_gift_request(callback: types.CallbackQuery, bot: Bot, session: 
     print('in handle_gift_request ...')
     user_id = callback.from_user.id
     print(f'{callback.from_user.id=}')
-    is_subscribed = await check_sub(bot, user_id)
+    channel_id = channel_id
+    is_subscribed = await check_channel_subscription(bot, user_id, channel_id)
 
     if is_subscribed:
         # СЦЕНАРИЙ 1: Пользователь подписан — отдаем подарок
@@ -84,19 +85,19 @@ async def handle_gift_request(callback: types.CallbackQuery, bot: Bot, session: 
         # print(f'{callback.message=}')
         await callback.message.edit_text(
             f"✅ Спасибо за подписку!\n\n"
-            f"📥 <a href='{FREE_GUIDE_LINK}'>Нажмите здесь, чтобы скачать гайд</a>",
+            f"📥 <a href='{PRODUCTS['Настоящая Сербия'].link}'>Нажмите здесь, чтобы скачать гайд</a>",
             # Это позволит ссылке выглядеть как текст
             parse_mode="HTML",
             # Отключаем превью, чтобы не было лишних картинок под текстом
             link_preview_options=LinkPreviewOptions(is_disabled=True),
             reply_markup=back_main_menu_markup,
         )
-        print(f'{callback.from_user.id=}')
-        await log_action(
-            session=session,
+        await data.create_action(
             tg_id=user_id,
-            action_type="free_guide"  # Вернет "road_trip_guide"
+            action_type=ActionType.FREE_GUIDE,
+            details='Настоящая Сербия'
         )
+
         await callback.answer()
     else:
         # Если НЕ подписан — показываем всплывающее окно (alert)

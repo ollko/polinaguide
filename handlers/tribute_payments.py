@@ -4,9 +4,9 @@ import hmac
 from aiohttp import web
 from aiogram import Bot
 
-import data
+import data.data as data
 from models import ActionType
-from products import PRODUCTS
+from data.data import PRODUCTS
 
 API_KEY = os.getenv("TRIBUTE_API_TOKEN")
 

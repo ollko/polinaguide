@@ -2,10 +2,10 @@ from os import getenv
 
 from aiogram import Router, types, F
 
-import data
+import data.data as data
 from inline_markups import *
 from models import ActionType
-from products import PRODUCTS
+from data.data import PRODUCTS
 
 payments_router = Router()
 

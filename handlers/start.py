@@ -5,7 +5,7 @@ from aiogram.filters.command import CommandStart
 from aiogram.filters.chat_member_updated import ChatMemberUpdatedFilter, MEMBER, KICKED
 from aiogram.types import ChatMemberUpdated, Message, CallbackQuery
 
-import data
+import data.data as data
 
 from texts import (
     GREATING_TEXT,

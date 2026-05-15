@@ -12,7 +12,7 @@ from aiogram.types import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-import data
+import data.data as data
 
 ADMIN_ID = int(os.environ.get("ADMIN_ID"))
 
