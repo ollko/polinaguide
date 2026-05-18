@@ -121,16 +121,16 @@ async def send_answer_to_user(
     state: FSMContext,
     bot: Bot,
 ):
-    data = await state.get_data()
-    data = await state.get_data()
-    user_id = data.get("reply_to_id")
-    ticket_id = data.get("ticket_id")
+    state_data = await state.get_data()
+    user_id = state_data.get("reply_to_id")
+    ticket_id = state_data.get("ticket_id")
 
     try:
         await bot.send_message(user_id, f"🔔 **Ответ от Полины:**\n\n{message.text}")
-        await data.save_answer(ticket_id, message.text)
-        await message.answer("Ответ успешно отправлен пользователю.")
     except Exception as e:
         await message.answer(f"Ошибка при отправке: {e}")
+
+    await message.answer("Ответ успешно отправлен пользователю.")
+    await data.save_answer(ticket_id, message.text)
 
     await state.clear()

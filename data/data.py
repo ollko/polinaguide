@@ -84,22 +84,22 @@ async def update_user_status(tg_id: int, new_status: str):
         await session.commit()
 
 
-async def save_question(session: AsyncSession, tg_id: int, question_text: str) -> int:
+async def save_question(tg_id: int, question_text: str) -> int:
     async with Session() as session:
-        user_query = select(User.id).where(User.tg_id == tg_id)
-        result = await session.execute(user_query)
-        user_id = result.scalar_one()
+        user = await session.get(User, tg_id)
+        print(f'{user=}')
 
         new_ticket = SupportTicket(
-            user_id=user_id,
+            tg_id=user.tg_id,
             question=question_text
         )
         session.add(new_ticket)
         # Используем flush вместо commit, чтобы получить id нового тикета,
         # не закрывая транзакцию (commit будет позже в хэндлере или здесь)
         await session.flush()
+        new_ticket_id = new_ticket.id
         await session.commit()
-        return new_ticket.id  # Возвращаем ID, чтобы потом найти этот тикет для ответа
+        return new_ticket_id  # Возвращаем ID, чтобы потом найти этот тикет для ответа
 
 
 async def save_answer(ticket_id: int, answer_text: str):
