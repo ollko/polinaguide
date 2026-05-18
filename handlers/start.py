@@ -7,11 +7,18 @@ from aiogram.types import ChatMemberUpdated, Message, CallbackQuery
 
 import data.data as data
 
-from texts import (
-    GREATING_TEXT,
-)
 from inline_markups import get_all_products_markup
 start_router = Router()
+
+
+GREATING_TEXT = '''Привет! 👋
+
+Если ты когда-нибудь пытался спланировать маршрут по Сербии и понял, сколько это занимает времени — этот бот сильно упростит тебе жизнь😊
+
+Мы уже проделали за тебя десятки часов планирования и собрали маршруты так, как сделали бы это для себя: с продуманной логикой, проверенными локациями и без лишней суеты. Мы знаем регион изнутри, поэтому в гайдах — не случайные точки, а места, отобранные по реальному опыту, а не по туристическим спискам.
+
+✨️Выбирай, с чего начать — и погнали исследовать Балканы:
+'''
 
 
 @start_router.callback_query(F.data == "start_menu")
