@@ -10,31 +10,32 @@ import data.data as data
 from texts import (
     GREATING_TEXT,
 )
-from inline_markups import get_product_greating_markup
+from inline_markups import get_all_products_markup
 start_router = Router()
 
 
-@start_router.callback_query(F.data == "main_menu")
+@start_router.callback_query(F.data == "start_menu")
 @start_router.message(CommandStart())
 async def start(event: Union[Message, CallbackQuery]):
     user = event.from_user
     text_to_send = GREATING_TEXT
-    greating_markup = await get_product_greating_markup()
+    all_products_markup = await get_all_products_markup()
     await data.create_or_update_user(
         tg_id=user.id,
         username=user.username
     )
 
     if isinstance(event, Message):
+        print(f'{all_products_markup=}')
         await event.answer(
             text=text_to_send,
-            reply_markup=greating_markup,
+            reply_markup=all_products_markup,
         )
 
     elif isinstance(event, CallbackQuery):
         await event.message.edit_text(
             text=text_to_send,
-            reply_markup=greating_markup,
+            reply_markup=all_products_markup,
         )
         await event.answer()
 

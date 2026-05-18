@@ -78,7 +78,14 @@ async def guide(callback: types.CallbackQuery):
                     )]
                 )
             if not product.free:
-                product_btns.append([question_before_purchase_btn])
+                product_btns.append(
+                    [
+                        InlineKeyboardButton(
+                            text='Задать свой вопрос перед покупкой',
+                            callback_data='ask_question_start'
+                        )
+                    ]
+                )
 
             product_btns.append([back_to_start_meny_btn])
 
@@ -97,6 +104,31 @@ async def buy_product(callback: types.CallbackQuery):
     product_id = callback.data.split(":")[1]
     if product_id:
         product = await data.get_product_new(int(product_id))
+        await callback.message.edit_text(
+            "Выберите удобный способ оплаты:",
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(
+                            text='Оплатить через Телеграм',
+                            url=product.pay_tribute_url
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            text='Оплатить картой (ЮKassa)',
+                            callback_data=f'pay_yookassa:{product_id}'
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            text='👈🏼 Вернуться',
+                            callback_data=f"product:{product_id}"
+                        )
+                    ]
+                ]
+            )
+        )
         await callback.answer()
 
 

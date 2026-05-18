@@ -9,7 +9,7 @@ from aiogram.types import (
 from aiogram.filters import Command
 
 import data.data as data
-from handlers.free_guide import check_channel_subscription
+from handlers.guide import check_channel_subscription
 
 channel_id = os.getenv("CHANNEL_ID")
 channel_name = os.getenv("CHANNEL_NAME")
