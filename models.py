@@ -160,6 +160,8 @@ class Product(Base):
     not_suitable: Mapped[str] = mapped_column(default='', server_default='')
     what_inside: Mapped[str] = mapped_column(default='', server_default='')
 
+    emojis: Mapped[str] = mapped_column(String(20), nullable=True)
+
     @property
     def invoice_payload(self):
         return f'guide_{self.id}'
