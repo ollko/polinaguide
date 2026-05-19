@@ -2,11 +2,12 @@ import os
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import select
 
 from models import Base, Product, Notification
 
 
-from sqlalchemy import select
+RESET_MARKER = "/data/db_dropped_v2.flag"
 
 ALEMBIC_DB_URL = os.environ.get('ALEMBIC_DB_URL')
 
@@ -15,11 +16,6 @@ engine = create_engine(ALEMBIC_DB_URL, echo=True)
 
 Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 session = Session()
-
-
-def init_db():
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
 
 
 def init_products():
@@ -201,7 +197,17 @@ def init_notifications():
         session.commit()
 
 
-if __name__ == "__main__":
-    init_db()
+def main():
+    if not os.path.exists(RESET_MARKER):
+        Base.metadata.drop_all(bind=engine)
+        with open(RESET_MARKER, "w") as f:
+            f.write("done")
+    else:
+        pass
+    Base.metadata.create_all(bind=engine)
     init_products()
     init_notifications()
+
+
+if __name__ == "__main__":
+    main()
