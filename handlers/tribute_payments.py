@@ -3,25 +3,36 @@ import hashlib
 import hmac
 from aiohttp import web
 from aiogram import Bot
-from data import create_payment_and_action
-# Константы
+
+import data.data as data
+from models import ActionType
+
 API_KEY = os.getenv("TRIBUTE_API_TOKEN")
-HOST = "0.0.0.0"
-PORT = 3000
 
 
-async def send_guide(bot, user_id, product_name):
-    files = {
-        '121370': "link_OF_GUIDE_1",
-        "guide_2": "FILE_ID_OF_GUIDE_2"
-    }
+async def get_amount_str(
+    amount: int,
+    currency: str
+):
+    price = amount / 100
+    return f"{price:.2f} {currency}."
 
-    link_to_guide = files.get(product_name)
-    if link_to_guide:
+
+async def send_guide(
+        bot,
+        user_id,
+        product_name,
+        amount_str,
+):
+
+    if product and product.link:
         try:
             await bot.send_message(
                 chat_id=user_id,
-                text=f"🎉 Спасибо за покупку! Это ссылка на ваш гайд: {link_to_guide}"
+                text=f"💳 Оплата успешно получена через Трибьют!\n"
+                f"Сумма: {amount_str}\n\n"
+                f"🎉 Спасибо за покупку путеводителя «{product_name}»!\n\n"
+                f"📍 Скачать гайд по ссылке:\n{product.link}"
             )
         except Exception as e:
             print(f"Ошибка при отправке файла: {e}")
@@ -61,20 +72,42 @@ async def tribute_webhook_handler(request: web.Request) -> web.Response:
 
     # 4. Безопасный парсинг JSON после валидации
     try:
-        data = await request.json()
+        r = await request.json()
 
     except Exception:
         return web.Response(text="Invalid JSON", status=200)
-    if "test_event" in data:
-        return web.Response(text="TEST_OK", status=200)
-    event = data.get("name")
-    if event == "new_digital_product":
-        payload = data.get("payload", {})
-        result = await create_payment_and_action(payload)
-        # 6. Tribute требует строгий возврат 200 OK
-        if result.get("status") == 200 and "product_id" in result:
-            user_id = result["user_id"]
-            product_id = result["product_id"]
-            await send_guide(bot, user_id, product_id)
 
+    event = r.get("name")
+    if event == "new_digital_product":
+        payload = r.get("payload", {})
+        result = await data.create_tribute_payment(payload)
+        # 6. Tribute требует строгий возврат 200 OK
+        if (
+            result.get("status") == 200
+            and "product_name" in result
+            and "amount" in result
+            and "currency" in result
+        ):
+            user_id = result["user_id"]
+            product_name = result["product_name"]
+            amount = int(result["amount"])
+            currency = str(result["currency"]).upper()
+            try:
+                amount_str = await get_amount_str(amount, currency)
+            except Exception as e:
+                print('Ошибка при сохранении в таблицу tribute_payment: {e}')
+            await send_guide(
+                bot,
+                user_id,
+                product_name,
+                amount_str,
+            )
+            try:
+                await data.create_action(
+                    tg_id=user_id,
+                    action_type=ActionType.PURCHASE,
+                    details=f'Покупка товара {product_name} на сумму {amount_str} через TRIBUTE'
+                )
+            except Exception as e:
+                print('Ошибка при сохранении в таблицу action: {e}')
         return web.Response(text="OK", status=200)

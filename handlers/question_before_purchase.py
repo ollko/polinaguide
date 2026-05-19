@@ -12,7 +12,7 @@ from aiogram.types import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data import save_answer, save_question
+import data.data as data
 
 ADMIN_ID = int(os.environ.get("ADMIN_ID"))
 
@@ -74,7 +74,7 @@ async def forward_question_to_admin(
 ):
     '''
     '''
-    ticket_id = await save_question(session, message.from_user.id, message.text)
+    ticket_id = await data.save_question(message.from_user.id, message.text)
 
     # Отправляем админу
     kb = InlineKeyboardMarkup(inline_keyboard=[
@@ -120,18 +120,17 @@ async def send_answer_to_user(
     message: Message,
     state: FSMContext,
     bot: Bot,
-    session: AsyncSession
 ):
-    data = await state.get_data()
-    data = await state.get_data()
-    user_id = data.get("reply_to_id")
-    ticket_id = data.get("ticket_id")
+    state_data = await state.get_data()
+    user_id = state_data.get("reply_to_id")
+    ticket_id = state_data.get("ticket_id")
 
     try:
         await bot.send_message(user_id, f"🔔 **Ответ от Полины:**\n\n{message.text}")
-        await save_answer(session, ticket_id, message.text)
-        await message.answer("Ответ успешно отправлен пользователю.")
     except Exception as e:
         await message.answer(f"Ошибка при отправке: {e}")
+
+    await message.answer("Ответ успешно отправлен пользователю.")
+    await data.save_answer(ticket_id, message.text)
 
     await state.clear()

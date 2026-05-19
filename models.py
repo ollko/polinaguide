@@ -3,7 +3,9 @@ import enum
 from os import getenv
 from typing import List, Optional
 
-from sqlalchemy import Integer, BigInteger, String, ForeignKey, DateTime, Text, func, Enum
+from sqlalchemy import (
+    Integer, BigInteger, String, ForeignKey, DateTime, Text, func, Enum, Boolean,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
 
@@ -11,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_
 DB_URL = getenv('DB_URL')
 
 engine = create_async_engine(DB_URL, echo=False)
+
 async_session = async_sessionmaker(engine)
 
 
@@ -28,10 +31,8 @@ class Base(AsyncAttrs, DeclarativeBase):
 class User(Base):
     __tablename__ = 'user'
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    tg_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
-    trb_user_id: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True)
+    tg_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+
     username: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     registered_at: Mapped[datetime] = mapped_column(
@@ -41,7 +42,14 @@ class User(Base):
     status: Mapped[str] = mapped_column(
         String, default="active", server_default="active")  # active / blocked
 
-    payments: Mapped[List["Payment"]] = relationship(
+    is_admin: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="0", nullable=False)
+
+    yookassa_payments: Mapped[List["YookassaPayment"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    tribute_payments: Mapped[List["TributePayment"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )
@@ -55,57 +63,66 @@ class User(Base):
     )
 
 
-class Payment(Base):
-    __tablename__ = 'payment'
+class YookassaPayment(Base):
+    __tablename__ = 'yookassa_payment'
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(
-        ForeignKey('user.id', ondelete='CASCADE'))
+        ForeignKey('user.tg_id', ondelete='SET NULL'), nullable=True)
+    currency: Mapped[str] = mapped_column(String)
 
-    external_id: Mapped[str] = mapped_column(
-        String(100), unique=True, index=True)
+    total_amount: Mapped[int] = mapped_column(Integer)
+    invoice_payload: Mapped[str] = mapped_column(String)
+    telegram_payment_charge_id:  Mapped[str] = mapped_column(String)
+    provider_payment_charge_id: Mapped[str] = mapped_column(String)
 
-    product_name: Mapped[str] = mapped_column(String(255))
-    # Сохраняем ID для логики выдачи (проще сравнивать "guide_1", чем "Гайд по похудению v2.0")
-    product_id: Mapped[str] = mapped_column(String(100), index=True)
+    prod_id: Mapped[int] = mapped_column(
+        ForeignKey('product.id', ondelete='SET NULL'), nullable=True)
+    user: Mapped["User"] = relationship(back_populates="yookassa_payments")
 
+
+class TributePayment(Base):
+    __tablename__ = 'tribute_payment'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
     amount: Mapped[int] = mapped_column(Integer)
-    currency: Mapped[str] = mapped_column(String(10))
+    currency: Mapped[str] = mapped_column(String)
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now())
-
-    user: Mapped["User"] = relationship(back_populates="payments")
+    product_id: Mapped[int] = mapped_column(Integer)  # из ответа Tribute
+    product_name: Mapped[str] = mapped_column(String)
+    purchase_created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True))
+    purchase_id: Mapped[int] = mapped_column(Integer)
+    telegram_user_id: Mapped[int] = mapped_column(
+        ForeignKey('user.tg_id', ondelete='SET NULL'), nullable=True)
+    telegram_username: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True)
+    transaction_id: Mapped[int] = mapped_column(Integer)
+    trb_user_id: Mapped[str] = mapped_column(String)
+    user_id: Mapped[int] = mapped_column(Integer)
+    prod_id: Mapped[int] = mapped_column(
+        ForeignKey('product.id', ondelete='SET NULL'), nullable=True)
+    user: Mapped["User"] = relationship(back_populates="tribute_payments")
 
 
 class Action(Base):
     __tablename__ = 'action'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey('user.id', ondelete='CASCADE'))
+    tg_id: Mapped[int] = mapped_column(
+        ForeignKey('user.tg_id', ondelete='CASCADE'))
 
     action_type: Mapped[ActionType] = mapped_column(
         Enum(ActionType, native_enum=False),
         index=True,
     )
-
-    # Ссылка на платеж (опционально)
-    # Если действие — покупка, тут будет ID из таблицы Payment
-    payment_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey('payment.id', ondelete='SET NULL'),
-        nullable=True,
-        default=None,
-    )
-
-    # Текстовое описание для истории (например, "Купил гайд через Tribute")
-    details: Mapped[str] = mapped_column(
-        String(255), nullable=True, default='')
-
+    product_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey('product.id', ondelete='SET NULL'))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now()
     )
+    details: Mapped[str] = mapped_column(String)
 
     user: Mapped["User"] = relationship(back_populates="actions")
 
@@ -114,8 +131,8 @@ class SupportTicket(Base):
     __tablename__ = 'support_ticket'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey('user.id', ondelete='CASCADE'))
+    tg_id: Mapped[int] = mapped_column(
+        ForeignKey('user.tg_id', ondelete='SET NULL'))
     question: Mapped[str] = mapped_column(Text)
     answer: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     question_time: Mapped[datetime] = mapped_column(
@@ -128,3 +145,36 @@ class SupportTicket(Base):
         nullable=True,
     )
     user: Mapped["User"] = relationship(back_populates="support_tickets")
+
+
+class Product(Base):
+    __tablename__ = "product"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_name: Mapped[str] = mapped_column(
+        unique=True)  # назвение товара в Tribute
+    description: Mapped[Optional[str]]  # на кнопке в greating
+    product_url: Mapped[str]
+    free: Mapped[bool] = mapped_column(server_default="true")
+    yookassa_total_amount: Mapped[Optional[int]]
+    pay_tribute_url: Mapped[Optional[str]]
+
+    text: Mapped[str] = mapped_column(default='', server_default='')
+    suitable: Mapped[str] = mapped_column(default='', server_default='')
+    not_suitable: Mapped[str] = mapped_column(default='', server_default='')
+    what_inside: Mapped[str] = mapped_column(default='', server_default='')
+
+    emojis: Mapped[str] = mapped_column(String(20), nullable=True)
+
+    @property
+    def invoice_payload(self):
+        return f'guide_{self.id}'
+
+
+class Notification(Base):
+    __tablename__ = "notification"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey('product.id', ondelete='SET NULL'))
+    day_delta: Mapped[int]
+    notification: Mapped[str]

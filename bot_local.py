@@ -1,22 +1,29 @@
+from handlers.yookassa_payments import yookassa_payments_router
+from handlers.guide import guide_router
+from aiogram import Bot, Dispatcher
+from handlers.tribute_payments import tribute_webhook_handler
+from middlewares import DbSessionMiddleware
+from handlers.question_before_purchase import question_before_purchase_router
+from handlers.yookassa_payments import payments_router
+from handlers.road_trip_guide import road_trip_quide_router
+from handlers.free_guide import free_quide_router
+from handlers.start import start_router
+from handlers.main_menu import main_menu_router
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram import Bot, Dispatcher, Router
 from aiogram.types import BotCommand, BotCommandScopeDefault
 import logging
 import os
 import sys
 
 from aiohttp import web
-from aiogram import Bot, Dispatcher, Router
-from aiogram.client.session.aiohttp import AiohttpSession
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+<< << << < HEAD
 
-from handlers.main_menu import main_menu_router
-from handlers.start import start_router
-from handlers.free_guide import free_quide_router
-from handlers.road_trip_guide import road_trip_quide_router
-from handlers.yookassa_payments import payments_router
-from handlers.question_before_purchase import question_before_purchase_router
-from middlewares import DbSessionMiddleware
-from handlers.tribute_payments import tribute_webhook_handler
+== == == =
+
+>>>>>> > new
 
 TOKEN = os.getenv("BOT_TOKEN")
 
@@ -48,7 +55,9 @@ async def set_main_menu(bot: Bot):
 async def on_startup(bot: Bot) -> None:
     await bot.set_webhook(
         f"{BASE_WEBHOOK_URL}{WEBHOOK_PATH}",
-        secret_token=WEBHOOK_SECRET,
+        allowed_updates=["message", "callback_query",
+                         "edited_message", "channel_post"],
+        drop_pending_updates=True
     )
     await set_main_menu(bot)
 
@@ -57,20 +66,13 @@ def main() -> None:
     dp = Dispatcher()
 
     dp.include_routers(
-        main_menu_router,
         start_router,
-        free_quide_router,
-        road_trip_quide_router,
-        payments_router,
+        guide_router,
+        main_menu_router,
+        yookassa_payments_router,
         question_before_purchase_router,
     )
 
-    engine = create_async_engine("sqlite+aiosqlite:///db.sqlite3", echo=True)
-    session_pool = async_sessionmaker(engine, expire_on_commit=False)
-
-    dp.update.middleware(DbSessionMiddleware(session_pool=session_pool))
-
-    # Register startup hook to initialize webhook
     dp.startup.register(on_startup)
 
     aiohttpsession = AiohttpSession(proxy='socks5://127.0.0.1:10808')

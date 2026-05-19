@@ -5,9 +5,9 @@ meta:
     version: "3.11"
 build:
   requirementsPath: requirements.txt
-  useCache: true
+  useCache: false
 run:
   persistenceMount: /data
-  command: alembic upgrade head && python3.11 bot.py
+  command: python3.11 -m data.init_db && python3.11 bot.py
   containerPort: 8080
   servicePort: 80
