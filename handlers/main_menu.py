@@ -1,4 +1,6 @@
+from collections.abc import Sequence
 import os
+from typing import Any
 
 from aiogram import Router
 from aiogram.types import (
@@ -7,6 +9,7 @@ from aiogram.types import (
     InlineKeyboardMarkup,
 )
 from aiogram.filters import Command
+from sqlalchemy import Row
 
 import data.data as data
 from handlers.guide import check_channel_subscription
@@ -18,12 +21,12 @@ channel_url = os.getenv("CHANNEL_URL")
 main_menu_router = Router()
 
 
-async def get_guides_list(guides: list[data.Product]) -> str:
+async def get_guides_list(guides: Sequence[Row[Any]]) -> str:
 
     guides_list = "\n".join(
         [
-            f"📍 {g.products_name}\n {g.link}"
-            for g in guides
+            f"📍 {product_name}\n {product_url}"
+            for product_name, product_url in guides
         ]
     )
     return f"📚 Список ваших гайдов:\n\n{guides_list}"
@@ -32,7 +35,7 @@ async def get_guides_list(guides: list[data.Product]) -> str:
 @main_menu_router.message(Command("my_guides"))
 async def show_my_guides(message: Message):
     user_id = message.from_user.id
-    guides = await data.get_purchased_products(user_id)
+    guides: Sequence[Row[Any]] = await data.get_purchased_products(user_id)
     text = await get_guides_list(guides)
     await message.answer(text)
 

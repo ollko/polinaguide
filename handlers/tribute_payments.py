@@ -6,7 +6,6 @@ from aiogram import Bot
 
 import data.data as data
 from models import ActionType
-from data.data import PRODUCTS
 
 API_KEY = os.getenv("TRIBUTE_API_TOKEN")
 
@@ -25,7 +24,6 @@ async def send_guide(
         product_name,
         amount_str,
 ):
-    product = PRODUCTS.get(product_name)
 
     if product and product.link:
         try:

@@ -19,11 +19,11 @@ back_main_menu_markup = InlineKeyboardMarkup(
 
 
 async def get_all_products_markup():
-    products = await data.get_products_new()
+    products = await data.get_products()
 
     product_btns = [
         InlineKeyboardButton(
-            text=f'🚗 {p.description}',
+            text=f'{p.emojis} {p.description}',
             callback_data=f"product:{p.id}")
         for p in products
 

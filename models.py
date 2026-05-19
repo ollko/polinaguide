@@ -68,7 +68,7 @@ class YookassaPayment(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(
-        ForeignKey('user.tg_id', ondelete='SET NULL'))
+        ForeignKey('user.tg_id', ondelete='SET NULL'), nullable=True)
     currency: Mapped[str] = mapped_column(String)
 
     total_amount: Mapped[int] = mapped_column(Integer)
@@ -76,6 +76,8 @@ class YookassaPayment(Base):
     telegram_payment_charge_id:  Mapped[str] = mapped_column(String)
     provider_payment_charge_id: Mapped[str] = mapped_column(String)
 
+    prod_id: Mapped[int] = mapped_column(
+        ForeignKey('product.id', ondelete='SET NULL'), nullable=True)
     user: Mapped["User"] = relationship(back_populates="yookassa_payments")
 
 
@@ -86,19 +88,20 @@ class TributePayment(Base):
     amount: Mapped[int] = mapped_column(Integer)
     currency: Mapped[str] = mapped_column(String)
 
-    product_id: Mapped[int] = mapped_column(Integer)
+    product_id: Mapped[int] = mapped_column(Integer)  # из ответа Tribute
     product_name: Mapped[str] = mapped_column(String)
     purchase_created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True))
     purchase_id: Mapped[int] = mapped_column(Integer)
     telegram_user_id: Mapped[int] = mapped_column(
-        ForeignKey('user.tg_id', ondelete='SET NULL'))
+        ForeignKey('user.tg_id', ondelete='SET NULL'), nullable=True)
     telegram_username: Mapped[Optional[str]] = mapped_column(
         String, nullable=True)
     transaction_id: Mapped[int] = mapped_column(Integer)
     trb_user_id: Mapped[str] = mapped_column(String)
     user_id: Mapped[int] = mapped_column(Integer)
-
+    prod_id: Mapped[int] = mapped_column(
+        ForeignKey('product.id', ondelete='SET NULL'), nullable=True)
     user: Mapped["User"] = relationship(back_populates="tribute_payments")
 
 

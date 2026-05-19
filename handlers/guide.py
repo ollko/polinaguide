@@ -7,6 +7,8 @@ from models import ActionType
 import data.data as data
 
 channel_id = int(os.environ.get("CHANNEL_ID"))
+channel_name = os.environ.get("CHANNEL_NAME")
+channel_url = os.environ.get("CHANNEL_URL")
 
 guide_router = Router()
 
@@ -21,7 +23,7 @@ btns = {
 async def guide(callback: types.CallbackQuery):
     product_id = callback.data.split(":")[1]
     if product_id:
-        product = await data.get_product_new(int(product_id))
+        product = await data.get_product(int(product_id))
         if product:
             product_btns = []
             if not product.free:
@@ -103,7 +105,7 @@ async def guide(callback: types.CallbackQuery):
 async def buy_product(callback: types.CallbackQuery):
     product_id = callback.data.split(":")[1]
     if product_id:
-        product = await data.get_product_new(int(product_id))
+        product = await data.get_product(int(product_id))
         await callback.message.edit_text(
             "Выберите удобный способ оплаты:",
             reply_markup=InlineKeyboardMarkup(
@@ -136,7 +138,7 @@ async def buy_product(callback: types.CallbackQuery):
 async def suitable(callback: types.CallbackQuery):
     product_id = callback.data.split(":")[1]
     if product_id:
-        product = await data.get_product_new(int(product_id))
+        product = await data.get_product(int(product_id))
         buy_product_markup = await get_buy_product_markup(product_id)
         await callback.message.edit_text(
             text=product.suitable,
@@ -148,7 +150,7 @@ async def suitable(callback: types.CallbackQuery):
 async def not_suitable(callback: types.CallbackQuery):
     product_id = callback.data.split(":")[1]
     if product_id:
-        product = await data.get_product_new(int(product_id))
+        product = await data.get_product(int(product_id))
         buy_product_markup = await get_buy_product_markup(product_id)
         await callback.message.edit_text(
             text=product.not_suitable,
@@ -160,7 +162,7 @@ async def not_suitable(callback: types.CallbackQuery):
 async def what_inside(callback: types.CallbackQuery):
     product_id = callback.data.split(":")[1]
     if product_id:
-        product = await data.get_product_new(int(product_id))
+        product = await data.get_product(int(product_id))
         buy_product_markup = await get_buy_product_markup(product_id)
         await callback.message.edit_text(
             text=product.what_inside,
@@ -207,7 +209,7 @@ async def handle_gift_request(callback: types.CallbackQuery, bot: Bot, session: 
     if is_subscribed:
         # СЦЕНАРИЙ 1: Пользователь подписан — отдаем подарок
         product_id = callback.data.split(":")[1]
-        product = await data.get_product_new(int(product_id))
+        product = await data.get_product(int(product_id))
         await callback.message.edit_text(
             f"✅ Спасибо за подписку!\n\n"
             f"📥 <a href='{product.product_url}'>Нажмите здесь, чтобы скачать гайд</a>",

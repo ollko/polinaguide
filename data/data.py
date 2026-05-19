@@ -1,9 +1,10 @@
-from collections import namedtuple
-import os
+from collections.abc import Sequence
 from datetime import datetime
+import os
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, text
+from sqlalchemy import select, update, text, Row
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from models import (
@@ -14,39 +15,11 @@ from models import (
     YookassaPayment,
     TributePayment,
     ActionType,
-    Product as OrmProduct,
+    Product
 )
 
 engine = create_async_engine(os.environ['DB_URL'], echo=False)
 Session = async_sessionmaker(engine)
-
-
-Product = namedtuple(
-    "Product", ["products_name", "yookassa_products_id", "link", "free", "amount"])
-
-PRODUCTS = {
-    'Настоящая Сербия': Product(
-        'Настоящая Сербия: где природа чарует.',
-        "free_guide_1",
-        "https://drive.google.com/file/d/1cnhBYRJuYmCvBdblAfD9qEfTz7X86Zng/view",
-        True,
-        None,
-    ),
-    "guide_1": Product(
-        'Путеводитель "Западная Сербия на машине: по лучшим местам за 3 дня."',
-        "guide_1",
-        "https://drive.google.com/file/d/1RqhHPJ9YxCj2ZZBI7lLO-v4tCVN5GBUQ/view",
-        False,
-        10000,
-    ),
-    "Западная Сербия на машине": Product(
-        'Путеводитель "Западная Сербия на машине: по лучшим местам за 3 дня."',
-        "guide_1",
-        "https://drive.google.com/file/d/1RqhHPJ9YxCj2ZZBI7lLO-v4tCVN5GBUQ/view",
-        False,
-        10000,
-    ),
-}
 
 
 async def create_or_update_user(tg_id: int, username: str = None) -> bool:
@@ -231,55 +204,50 @@ async def create_action(
         return new_action_id
 
 
-def get_products(ids):
-    result = []
-    for id in ids:
-        if id in PRODUCTS:
-            result.append(PRODUCTS[id])
-    return result
-
-
-async def get_products_new(ids: list[int] | None = None):
+async def get_products(ids: list[int] | None = None) -> Sequence[Product]:
     async with async_session() as session:
-        stmt = select(OrmProduct)
+        stmt = select(Product)
         if ids:
-            stmt = stmt.where(OrmProduct.id.in_(ids))
+            stmt = stmt.where(Product.id.in_(ids))
         result = await session.scalars(stmt)
         return result.all()
 
 
-async def get_product_new(id: int):
+async def get_product(id: int):
     async with async_session() as session:
-        return await session.get(OrmProduct, id)
+        return await session.get(Product, id)
 
 
-async def get_purchased_products(user_id) -> list['Product']:
+async def get_purchased_products(user_id: int) -> Sequence[Row[Any]]:
     async with async_session() as session:
-        stmt = select(TributePayment.product_name).where(
-            TributePayment.telegram_user_id == user_id)
-        result = await session.scalars(stmt)
+        stmt = text("""
+            SELECT p.product_name, p.product_url
+            FROM product p
+            INNER JOIN yookassa_payment y ON p.id = y.prod_id
+            WHERE y.user_id = :user_id
+            
+            UNION
+            
+            SELECT p.product_name, p.product_url
+            FROM product p
+            INNER JOIN tribute_payment t ON p.id = t.prod_id
+            WHERE t.telegram_user_id = :user_id
+        """)
 
-        # Получаем список всех названий продуктов (скаляров)
-        purchased_tribute = result.all()
+        result = await session.execute(stmt, {"user_id": user_id})
 
-        stmt = select(YookassaPayment.invoice_payload).where(
-            YookassaPayment.user_id == user_id)
-        result = await session.scalars(stmt)
-
-        purchased_yookassa = result.all()
-
-        product_ids = list(purchased_tribute) + \
-            list(purchased_yookassa)
-
-        return get_products(product_ids)
+        # Возвращаем список словарей или generic-объектов
+        return result.all()
 
 
-async def get_free_products():
-    result = []
-    for _, v in PRODUCTS.items():
-        if v.free:
-            result.append(v)
-    return result
+async def get_free_products() -> Sequence[Row[Any]]:
+    async with async_session() as session:
+        stmt = (
+            select(Product.product_name, Product.product_url)
+            .where(Product.free == True)
+        )
+        result = await session.execute(stmt)
+        return result.all()
 
 
 async def get_users_who_did_not_buy_raw(session: AsyncSession):

@@ -4,7 +4,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from models import Base, Product, Notification
-from data.data import Session
 
 
 from sqlalchemy import select
@@ -55,8 +54,8 @@ def init_products():
             emojis='🎁',
         ),
         Product(
-            product_name='Западная Сербия на машине',
-            description='Путеводитель "Западная Сербия на машине: по лучшим местам за 3 дня."',
+            product_name='ГАЙД ДЛЯ АВТОПУТЕШЕСТВИЯ ПО ЗАПАДНОЙ СЕРБИИ',
+            description='Гайд автопутешествие по Западной Сербии',
             product_url="https://drive.google.com/file/d/1RqhHPJ9YxCj2ZZBI7lLO-v4tCVN5GBUQ/view",
             free=False,
             yookassa_total_amount=190000,  # в копейках для ЮKassa
@@ -67,7 +66,7 @@ def init_products():
 
 Мы собрали гайд, который превращает это в цельное путешествие, а не набор случайных точек.
 
-Цена: 1900 RUB/ 22 EUR/ 2600 RSD''',
+Цена: 1900 RUB/ 22 EUR''',
             suitable='''Кому подойдёт:
 — тем, кто живёт в Сербии и хочет "познакомиться с ней поближе"
 — тем, кто приехал ненадолго и не хочет тратить время впустую
@@ -109,7 +108,7 @@ def init_products():
 👉 всё логично выстроено
 👉 и тебе не нужно тратить часы на подготовку
 
-Цена: 1900 RUB/ 22 EUR/ 2600 RSD''',
+Цена: 1900 RUB/ 22 EUR''',
             emojis='🚗',
         )
     ]
@@ -121,7 +120,7 @@ def init_products():
 def init_notifications():
     with Session() as session:
         stmt = select(Product.id).where(
-            Product.product_name == 'Западная Сербия на машине')
+            Product.product_name == 'ГАЙД ДЛЯ АВТОПУТЕШЕСТВИЯ ПО ЗАПАДНОЙ СЕРБИИ')
         result = session.execute(stmt)
         product_id = result.scalar()
 

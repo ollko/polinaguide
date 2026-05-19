@@ -5,11 +5,14 @@ from aiogram import Router, types, F
 import data.data as data
 from inline_markups import *
 from models import ActionType
-from data.data import PRODUCTS
+
 
 yookassa_payments_router = Router()
 
+
 YOOKASSA_TOKEN = getenv("YOOKASSA_TOKEN")
+TEST = getenv("TEST")
+TEST_YOOKASSA_AMOUNT = getenv('TEST_YOOKASSA_AMOUNT')
 
 
 @yookassa_payments_router.callback_query(F.data.startswith("pay_yookassa:"))
@@ -17,7 +20,11 @@ async def buy_via_yookassa(
     callback: types.CallbackQuery,
 ):
     product_id = callback.data.split(":")[1]
-    product = await data.get_product_new(int(product_id))
+    product = await data.get_product(int(product_id))
+    if TEST and TEST_YOOKASSA_AMOUNT:
+        amount = TEST_YOOKASSA_AMOUNT
+    else:
+        amount = product.yookassa_total_amount
     await callback.message.answer_invoice(
         title=product.product_name,
         description="Оплата через ЮKassa банковской картой.",
@@ -26,7 +33,7 @@ async def buy_via_yookassa(
         currency="RUB",                # Фиатная валюта
         prices=[types.LabeledPrice(
             label=product.product_name,
-            amount=product.yookassa_total_amount
+            amount=amount
         )],
         start_parameter=f"pay_{product.invoice_payload}"
     )
@@ -50,7 +57,7 @@ async def process_successful_payment(message: types.Message):
         payment=payment,
     )
     product_id = payment.invoice_payload.split('_')[1]
-    product = await data.get_product_new(int(product_id))
+    product = await data.get_product(int(product_id))
 
     price = payment.total_amount / 100
     amount_str = f"{price:.2f} руб."

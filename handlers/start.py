@@ -33,7 +33,6 @@ async def start(event: Union[Message, CallbackQuery]):
     )
 
     if isinstance(event, Message):
-        print(f'{all_products_markup=}')
         await event.answer(
             text=text_to_send,
             reply_markup=all_products_markup,
