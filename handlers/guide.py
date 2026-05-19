@@ -201,7 +201,7 @@ async def free_guide(callback: types.CallbackQuery):
 
 
 @guide_router.callback_query(F.data.startswith("check_membership_and_get_gift:"))
-async def handle_gift_request(callback: types.CallbackQuery, bot: Bot, session: AsyncSession):
+async def handle_gift_request(callback: types.CallbackQuery, bot: Bot):
     print('in handle_gift_request ...')
     user_id = callback.from_user.id
     is_subscribed = await check_channel_subscription(bot, user_id, channel_id=channel_id)
