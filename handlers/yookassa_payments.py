@@ -22,7 +22,7 @@ async def buy_via_yookassa(
     product_id = callback.data.split(":")[1]
     product = await data.get_product(int(product_id))
     if TEST and TEST_YOOKASSA_AMOUNT:
-        amount = TEST_YOOKASSA_AMOUNT
+        amount = int(TEST_YOOKASSA_AMOUNT)
     else:
         amount = product.yookassa_total_amount
     print(f'{amount=}')
