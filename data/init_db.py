@@ -202,11 +202,11 @@ def main():
         Base.metadata.drop_all(bind=engine)
         with open(RESET_MARKER, "w") as f:
             f.write("done")
+        Base.metadata.create_all(bind=engine)
+        init_products()
+        init_notifications()
     else:
         pass
-    Base.metadata.create_all(bind=engine)
-    init_products()
-    init_notifications()
 
 
 if __name__ == "__main__":
