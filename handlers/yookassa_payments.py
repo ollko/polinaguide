@@ -25,6 +25,8 @@ async def buy_via_yookassa(
         amount = TEST_YOOKASSA_AMOUNT
     else:
         amount = product.yookassa_total_amount
+    print(f'{amount=}')
+
     await callback.message.answer_invoice(
         title=product.product_name,
         description="Оплата через ЮKassa банковской картой.",
