@@ -35,7 +35,10 @@ async def buy_via_yookassa(
         payload=product.invoice_payload,
         provider_token=YOOKASSA_TOKEN,  # ОБЯЗАТЕЛЬНО для ЮKassa
         currency="RUB",                # Фиатная валюта
-        prices=amount,
+        prices=[types.LabeledPrice(
+            label=product.product_name,
+            amount=amount
+        )],
         start_parameter=f"pay_{product.invoice_payload}"
     )
     await callback.message.delete()
