@@ -55,7 +55,7 @@ def init_products():
             product_url="https://drive.google.com/file/d/1RqhHPJ9YxCj2ZZBI7lLO-v4tCVN5GBUQ/view",
             free=False,
             yookassa_total_amount=190000,  # в копейках для ЮKassa
-            pay_tribute_url="https://web.tribute.tg/p/w3eq",
+            pay_tribute_url="https://web.tribute.tg/p/w3e",
             text='''Ты можешь проехать по Западной Сербии…
 и вообще не понять, что в ней особенного.
 Красивые места будут, но без нормального маршрута это чаще всего хаос, лишние нервы и переезды.
