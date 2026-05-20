@@ -11,6 +11,7 @@ yookassa_payments_router = Router()
 
 
 YOOKASSA_TOKEN = getenv("YOOKASSA_TOKEN")
+
 TEST = getenv("TEST")
 TEST_YOOKASSA_AMOUNT = getenv('TEST_YOOKASSA_AMOUNT')
 
@@ -19,6 +20,7 @@ TEST_YOOKASSA_AMOUNT = getenv('TEST_YOOKASSA_AMOUNT')
 async def buy_via_yookassa(
     callback: types.CallbackQuery,
 ):
+    print(f'****   {YOOKASSA_TOKEN}')
     product_id = callback.data.split(":")[1]
     product = await data.get_product(int(product_id))
     if TEST and TEST_YOOKASSA_AMOUNT:
