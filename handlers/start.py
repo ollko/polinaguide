@@ -7,25 +7,14 @@ from aiogram.types import ChatMemberUpdated, Message, CallbackQuery
 
 import data.data as data
 
-from inline_markups import get_all_products_markup
+from inline_markups import get_all_products_markup, GREATING_TEXT
 start_router = Router()
-
-
-GREATING_TEXT = '''Привет! 👋
-
-Если ты когда-нибудь пытался спланировать маршрут по Сербии и понял, сколько это занимает времени — этот бот сильно упростит тебе жизнь😊
-
-Мы уже проделали за тебя десятки часов планирования и собрали маршруты так, как сделали бы это для себя: с продуманной логикой, проверенными локациями и без лишней суеты. Мы знаем регион изнутри, поэтому в гайдах — не случайные точки, а места, отобранные по реальному опыту, а не по туристическим спискам.
-
-✨️Выбирай, с чего начать — и погнали исследовать Балканы:
-'''
 
 
 @start_router.callback_query(F.data == "start_menu")
 @start_router.message(CommandStart())
 async def start(event: Union[Message, CallbackQuery]):
     user = event.from_user
-    text_to_send = GREATING_TEXT
     all_products_markup = await get_all_products_markup()
     await data.create_or_update_user(
         tg_id=user.id,
@@ -34,13 +23,13 @@ async def start(event: Union[Message, CallbackQuery]):
 
     if isinstance(event, Message):
         await event.answer(
-            text=text_to_send,
+            text=GREATING_TEXT,
             reply_markup=all_products_markup,
         )
 
     elif isinstance(event, CallbackQuery):
         await event.message.edit_text(
-            text=text_to_send,
+            text=GREATING_TEXT,
             reply_markup=all_products_markup,
         )
         await event.answer()

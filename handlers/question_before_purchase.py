@@ -12,6 +12,7 @@ from aiogram.types import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from inline_markups import GREATING_TEXT, get_all_products_markup
 import data.data as data
 
 ADMIN_ID = int(os.environ.get("ADMIN_ID"))
@@ -43,7 +44,7 @@ async def ask_question_start(
         [InlineKeyboardButton(
             text="❌ Отмена", callback_data="cancel_question")]
     ])
-    await callback.message.answer(
+    await callback.message.edit_text(
         "Напишите ваш вопрос, и я отвечу Вам в ближайшее время:",
         reply_markup=cancel_kb
     )
@@ -61,6 +62,10 @@ async def cancel_question(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(
         "Отправка вопроса отменена.",
         reply_markup=None
+    )
+    await callback.message.edit_text(
+        text=GREATING_TEXT,
+        reply_markup=await get_all_products_markup(),
     )
     await callback.answer()
 
