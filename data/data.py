@@ -215,7 +215,21 @@ async def get_products(ids: list[int] | None = None) -> Sequence[Product]:
 
 async def get_product(id: int):
     async with async_session() as session:
+        # Возвращает объект или None, если запись не найдена
         return await session.get(Product, id)
+
+
+async def get_product_url(product_name: str) -> str | None:
+    async with async_session() as session:
+        stmt = (
+            select(Product.product_url)
+            .where(Product.product_name == product_name)
+        )
+        # Возвращает первый элемент первой строки результата
+        # или  None если ничего не найдено
+        result = await session.scalar(stmt)
+        print(f'{result=}')
+        return await session.scalar(stmt)
 
 
 async def get_purchased_products(user_id: int) -> Sequence[Row[Any]]:
