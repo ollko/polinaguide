@@ -1,7 +1,6 @@
 from aiogram import Bot
 import asyncio
 import os
-from sqlalchemy import text
 from pytz import timezone
 from datetime import datetime
 
@@ -10,8 +9,6 @@ from data import data
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 NOTIFICATIONS_TIMEZONE = os.getenv("TIMEZONE", 'Europe/Moscow')
-NOTIFICATION_CRON_HOUR = os.getenv("NOTIFICATION_CRON_HOUR")
-NOTIFICATION_CRON_MINUTE = os.getenv("NOTIFICATION_CRON_MINUTE")
 
 
 async def notificator(bot: Bot):

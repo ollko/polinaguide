@@ -80,8 +80,8 @@ async def on_startup(bot: Bot, dispatcher: Dispatcher) -> None:
     scheduler.add_job(
         notificator_job,
         "cron",
-        hour=NOTIFICATION_CRON_HOUR,
-        minute=NOTIFICATION_CRON_MINUTE,
+        hour=int(NOTIFICATION_CRON_HOUR),
+        minute=int(NOTIFICATION_CRON_MINUTE),
         id='rssparse_job',
         timezone=msk_tz,
         kwargs={"bot": bot}
