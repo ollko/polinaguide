@@ -1,5 +1,6 @@
-from collections.abc import Sequence
+from async_lru import alru_cache
 from datetime import datetime
+from collections.abc import Sequence
 import os
 from typing import Any
 
@@ -204,7 +205,8 @@ async def create_action(
         return new_action_id
 
 
-async def get_products(ids: list[int] | None = None) -> Sequence[Product]:
+@alru_cache(maxsize=1)
+async def get_products(ids: tuple[int] | None = None) -> Sequence[Product]:
     async with async_session() as session:
         stmt = select(Product)
         if ids:
@@ -213,12 +215,14 @@ async def get_products(ids: list[int] | None = None) -> Sequence[Product]:
         return result.all()
 
 
+@alru_cache(maxsize=8)
 async def get_product(id: int):
     async with async_session() as session:
         # Возвращает объект или None, если запись не найдена
         return await session.get(Product, id)
 
 
+@alru_cache(maxsize=8)
 async def get_product_url(product_name: str) -> str | None:
     async with async_session() as session:
         stmt = (
@@ -254,6 +258,7 @@ async def get_purchased_products(user_id: int) -> Sequence[Row[Any]]:
         return result.all()
 
 
+@alru_cache(maxsize=8)
 async def get_free_products() -> Sequence[Row[Any]]:
     async with async_session() as session:
         stmt = (
@@ -264,25 +269,26 @@ async def get_free_products() -> Sequence[Row[Any]]:
         return result.all()
 
 
-async def get_users_who_did_not_buy_raw(session: AsyncSession):
-    # Вставляем один из SQL-запросов (см. ниже)
-    sql_query = """
-    SELECT 
-        a.tg_id, 
-        n.notification
-    FROM action a
-    JOIN notification n ON n.product_id = a.product_id
-    WHERE a.action_type = 'START'
-    -- Вычисляем разницу в днях (текущая дата минус дата создания экшена)
-    AND CAST(JULIANDAY('now') - JULIANDAY(a.created_at) AS INTEGER) = n.day_delta
-    -- Исключаем тех, кто в итоге купил этот гайд
-    AND NOT EXISTS (
-        SELECT 1 
-        FROM action ap
-        WHERE ap.tg_id = a.tg_id
-            AND ap.product_id = n.product_id
-            AND ap.action_type = 'PURCHASE'
-    );
-    """
-    result = await session.execute(text(sql_query))
-    return result.all()
+async def get_users_who_did_not_buy_raw(today_date_str: str):
+    async with Session() as session:
+        stmt = """
+        SELECT 
+            a.tg_id, 
+            n.notification
+        FROM action a
+        JOIN notification n ON n.product_id = a.product_id
+        WHERE a.action_type = 'START'
+        -- Вычисляем разницу в днях (текущая дата минус дата создания экшена)
+        AND CAST(JULIANDAY(:today_date) - JULIANDAY(DATE(a.created_at)) AS INTEGER) = n.day_delta
+        -- Исключаем тех, кто в итоге купил этот гайд
+        AND NOT EXISTS (
+            SELECT 1 
+            FROM action ap
+            WHERE ap.tg_id = a.tg_id
+                AND ap.product_id = n.product_id
+                AND ap.action_type = 'PURCHASE'
+        );
+        """
+        result = await session.execute(text(stmt), {"today_date": today_date_str})
+        print(f'{result.all()=}')
+        return result.all()

@@ -1,6 +1,5 @@
 import os
 from aiogram import Bot, Router, types, F
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from inline_markups import *
 from models import ActionType
