@@ -1,15 +1,8 @@
-from handlers.yookassa_payments import yookassa_payments_router
-from handlers.guide import guide_router
-from aiogram import Bot, Dispatcher
-from handlers.tribute_payments import tribute_webhook_handler
-from middlewares import DbSessionMiddleware
-from handlers.question_before_purchase import question_before_purchase_router
-from handlers.yookassa_payments import payments_router
-from handlers.road_trip_guide import road_trip_quide_router
-from handlers.free_guide import free_quide_router
-from handlers.start import start_router
-from handlers.main_menu import main_menu_router
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+# Импорты для планировщика
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
+from pytz import timezone
+
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram import Bot, Dispatcher, Router
@@ -18,12 +11,16 @@ import logging
 import os
 import sys
 
+from handlers.yookassa_payments import yookassa_payments_router
+from handlers.guide import guide_router
+from aiogram import Bot, Dispatcher
+from handlers.tribute_payments import tribute_webhook_handler
+from handlers.question_before_purchase import question_before_purchase_router
+
+from handlers.start import start_router
+from handlers.main_menu import main_menu_router
+from notifications import notificator as notificator_job
 from aiohttp import web
-<< << << < HEAD
-
-== == == =
-
->>>>>> > new
 
 TOKEN = os.getenv("BOT_TOKEN")
 
@@ -35,6 +32,9 @@ WEBHOOK_PATH = "/webhook"
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 TRIBUTE_API_TOKEN = os.getenv("TRIBUTE_API_TOKEN")
 
+NOTIFICATIONS_TIMEZONE = os.getenv("NOTIFICATIONS_TIMEZONE")
+NOTIFICATION_CRON_HOUR = os.getenv("NOTIFICATION_CRON_HOUR")
+NOTIFICATION_CRON_MINUTE = os.getenv("NOTIFICATION_CRON_MINUTE")
 
 router = Router()
 
@@ -52,14 +52,45 @@ async def set_main_menu(bot: Bot):
     )
 
 
-async def on_startup(bot: Bot) -> None:
+def my_listener(event):
+    if event.exception:
+        print(f"Задание {event.job_id} упало с ошибкой:")
+        print(f"  Тип: {type(event.exception).__name__}")
+        print(f"  Сообщение: {event.exception}")
+        print(f"  Трейсбек:\n{event.traceback}")
+    else:
+        print(f"✅ Задача {event.job_id} завершилась.")
+
+
+async def on_startup(bot: Bot, dispatcher: Dispatcher) -> None:
     await bot.set_webhook(
         f"{BASE_WEBHOOK_URL}{WEBHOOK_PATH}",
         allowed_updates=["message", "callback_query",
                          "edited_message", "channel_post"],
-        drop_pending_updates=True
+        drop_pending_updates=True,
     )
     await set_main_menu(bot)
+
+    msk_tz = timezone(NOTIFICATIONS_TIMEZONE)
+    scheduler = AsyncIOScheduler(timezone=msk_tz)
+    scheduler.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+
+    # Передаем bot прямо в аргументы выполняемой задачи (kwargs)
+    scheduler.add_job(
+        notificator_job,
+        "cron",
+        hour=NOTIFICATION_CRON_HOUR,
+        minute=NOTIFICATION_CRON_MINUTE,
+        id='rssparse_job',
+        timezone=msk_tz,
+        kwargs={"bot": bot}
+    )
+
+    scheduler.start()
+    print("⏰ Планировщик уведомлений успешно запущен.")
+
+    # Сохраняем ссылку на планировщик в workflow_data диспетчера, чтобы остановить его при выключении
+    dispatcher["scheduler"] = scheduler
 
 
 def main() -> None:
