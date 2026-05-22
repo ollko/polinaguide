@@ -68,6 +68,7 @@ async def on_startup(bot: Bot, dispatcher: Dispatcher) -> None:
         allowed_updates=["message", "callback_query",
                          "edited_message", "channel_post"],
         drop_pending_updates=True,
+        secret_token=WEBHOOK_SECRET,
     )
     await set_main_menu(bot)
 
