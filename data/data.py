@@ -293,4 +293,4 @@ async def get_users_who_did_not_buy_product(today_date_str: str):
         result = await session.execute(text(stmt), {"today_date": today_date_str})
         rows = result.all()
         print(f'{rows=}')
-        return result.all()
+        return rows
