@@ -269,26 +269,28 @@ async def get_free_products() -> Sequence[Row[Any]]:
         return result.all()
 
 
-async def get_users_who_did_not_buy_raw(today_date_str: str):
+async def get_users_who_did_not_buy_product(today_date_str: str):
     async with Session() as session:
         stmt = """
         SELECT 
-            a.tg_id, 
+            u.tg_id, 
             n.notification
-        FROM action a
-        JOIN notification n ON n.product_id = a.product_id
-        WHERE a.action_type = 'START'
+        FROM user u
+        CROSS JOIN notification n
+
         -- Вычисляем разницу в днях (текущая дата минус дата создания экшена)
-        AND CAST(JULIANDAY(:today_date) - JULIANDAY(DATE(a.created_at)) AS INTEGER) = n.day_delta
+        WHERE CAST(JULIANDAY(:today_date) - JULIANDAY(DATE(u.registered_at)) AS INTEGER) = n.day_delta
+
         -- Исключаем тех, кто в итоге купил этот гайд
         AND NOT EXISTS (
             SELECT 1 
             FROM action ap
-            WHERE ap.tg_id = a.tg_id
+            WHERE ap.tg_id = u.tg_id
                 AND ap.product_id = n.product_id
                 AND ap.action_type = 'PURCHASE'
         );
         """
         result = await session.execute(text(stmt), {"today_date": today_date_str})
-        print(f'{result.all()=}')
+        rows = result.all()
+        print(f'{rows=}')
         return result.all()

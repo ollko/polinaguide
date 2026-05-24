@@ -15,7 +15,7 @@ async def notificator(bot: Bot):
     tz = timezone(NOTIFICATIONS_TIMEZONE)
     current_time = datetime.now(tz)
     today_date_str = current_time.strftime('%Y-%m-%d')  # Формат '2026-05-22'
-    users_to_notify = await data.get_users_who_did_not_buy_raw(today_date_str)
+    users_to_notify = await data.get_users_who_did_not_buy_product(today_date_str)
 
     if not users_to_notify:
         print("💤 Нет пользователей для отправки уведомлений на сегодня.")
