@@ -23,7 +23,7 @@ main_menu_router = Router()
 
 async def get_guides_list(guides: Sequence[Row[Any]]) -> str:
     if not guides:
-        return f"У вас пока не гайдов"
+        return f"У вас пока нет гайдов"
 
     guides_list = "\n".join(
         [

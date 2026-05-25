@@ -2,7 +2,7 @@ import os
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import select, delete
+from sqlalchemy import select, update, delete
 
 from models import Base, Product, Notification
 
@@ -303,8 +303,27 @@ def overwrite_notification_data():
         print("✅ Тексты уведомлений успешно перезаписаны!")
 
 
+def update_product_fields():
+    with Session() as session:
+        # Укажите здесь новые значения, которые вы хотите записать
+        new_name = 'ТОП-50 природных мест Сербии'  # убрали лишний пробел
+        new_description = 'ТОП-50 природных мест Сербии 🇷🇸'
+
+        # Выполняем UPDATE, находя товар по его старому имени (с двумя пробелами)
+        session.execute(
+            update(Product)
+            .where(Product.product_name == 'Настоящая Сербия')
+            .values(
+                product_name=new_name,
+                description=new_description
+            )
+        )
+
+        session.commit()
+
+
 if __name__ == "__main__":
     if CHANGE_NOTIFIATIONS:
-        overwrite_notification_data()
+        update_product_fields()
     else:
         main()
