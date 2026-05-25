@@ -11,6 +11,8 @@ RESET_MARKER = "/data/db_dropped_v2.flag"
 
 ALEMBIC_DB_URL = os.environ.get('ALEMBIC_DB_URL')
 
+CHANGE_NOTIFIATIONS = os.environ.get("CHANGE_NOTIFIATIONS")
+
 engine = create_engine(ALEMBIC_DB_URL, echo=True)
 
 
@@ -302,4 +304,7 @@ def overwrite_notification_data():
 
 
 if __name__ == "__main__":
-    overwrite_notification_data()
+    if CHANGE_NOTIFIATIONS:
+        overwrite_notification_data()
+    else:
+        main()
