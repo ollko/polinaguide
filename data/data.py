@@ -274,7 +274,8 @@ async def get_users_who_did_not_buy_product(today_date_str: str):
         stmt = """
         SELECT 
             u.tg_id, 
-            n.notification
+            n.notification,
+            n.product_id
         FROM user u
         CROSS JOIN notification n
 

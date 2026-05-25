@@ -1,4 +1,6 @@
-from aiogram import Bot
+from aiogram import Bot, types
+from aiogram.enums import ParseMode
+
 import asyncio
 import os
 from pytz import timezone
@@ -23,9 +25,19 @@ async def notificator(bot: Bot):
 
     print(f"📢 Найдено пользователей для отправки: {len(users_to_notify)}")
     async with bot:
-        for tg_id, text_message in users_to_notify:
+        for tg_id, text_message, product_id in users_to_notify:
             try:
-                await bot.send_message(chat_id=tg_id, text=text_message)
+                await bot.send_message(
+                    chat_id=tg_id,
+                    text=text_message,
+                    reply_markup=types.InlineKeyboardMarkup(
+                        inline_keyboard=[[types.InlineKeyboardButton(
+                            text='Купить гайд',
+                            callback_data=f'buy:{product_id}'
+                        )]]
+                    ),
+                    parse_mode=ParseMode.MARKDOWN
+                )
                 print(f"✅ Успешно отправлено пользователю {tg_id}")
                 await asyncio.sleep(0.05)
             except Exception as e:
