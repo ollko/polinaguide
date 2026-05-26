@@ -330,8 +330,18 @@ def remove_tribute_payments(tg_id):
         session.commit()
 
 
+def set_prod_id(tg_id):
+    with Session() as session:
+        session.execute(
+            update(TributePayment)
+            .where(TributePayment.telegram_user_id == tg_id)
+            .values(prod_id=tg_id)
+        )
+        session.commit()
+
+
 if __name__ == "__main__":
     if CHANGE_NOTIFIATIONS:
-        remove_tribute_payments(1845310984)
+        set_prod_id(211526507)
     else:
         main()
