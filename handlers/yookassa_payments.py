@@ -27,8 +27,7 @@ async def buy_via_yookassa(
         currency="RUB",                # Фиатная валюта
         prices=[types.LabeledPrice(
             label=product.product_name,
-            # amount=product.yookassa_total_amount,
-            amount=10000
+            amount=product.yookassa_total_amount
         )],
         start_parameter=f"pay_{product.invoice_payload}"
     )
