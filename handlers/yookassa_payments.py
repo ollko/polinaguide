@@ -17,6 +17,7 @@ YOOKASSA_TOKEN = getenv("YOOKASSA_TOKEN")
 async def buy_via_yookassa(
     callback: types.CallbackQuery,
 ):
+    print(f'{YOOKASSA_TOKEN=}')
     product_id = callback.data.split(":")[1]
     product = await data.get_product(int(product_id))
     await callback.message.answer_invoice(
