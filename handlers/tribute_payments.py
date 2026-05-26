@@ -10,6 +10,12 @@ from models import ActionType
 
 TRIBUTE_API_TOKEN = os.getenv("TRIBUTE_API_TOKEN")
 
+PAYLOAD_KEY_ORDER = [
+    "product_id", "amount", "currency", "user_id", "trb_user_id",
+    "telegram_user_id", "telegram_username", "purchase_id",
+    "purchase_created_at", "product_name", "transaction_id"
+]
+
 
 async def get_amount_str(
     amount: int,
@@ -42,10 +48,31 @@ async def tribute_webhook_handler(request: web.Request) -> web.Response:
         print("Ошибка: Заголовок trbt-signature отсутствует")
         return web.Response(text="No signature header", status=200)
 
-    body_bytes = await request.read()
+    # 1. Читаем измененный JSON
+    try:
+        wrong_json = await request.json()
+    except Exception:
+        return web.Response(text="Invalid JSON structure", status=400)
 
-    print(f"Заголовки: {dict(request.headers)}")
-    print(f"Тело запроса: {body_bytes.decode('utf-8')}")
+    # 2. Пересобираем payload строго в том порядке, в котором его подписал Tribute
+    original_payload = wrong_json.get("payload", {})
+    ordered_payload = {k: original_payload[k]
+                       for k in PAYLOAD_KEY_ORDER if k in original_payload}
+
+    # 3. Собираем финальный JSON-объект
+    correct_dict = {
+        "created_at": wrong_json.get("created_at"),
+        "name": wrong_json.get("name"),
+        "payload": ordered_payload,
+        "sent_at": wrong_json.get("sent_at")
+    }
+
+    # 4. Превращаем в строку без лишних пробелов и с нормальной кириллицей (как в вашем тесте)
+    correct_body_str = json.dumps(
+        correct_dict, ensure_ascii=False, separators=(',', ':'))
+    body_bytes = correct_body_str.encode("utf-8")
+
+    # 5. Проверяем подпись
     computed_signature = hmac.new(
         key=TRIBUTE_API_TOKEN.encode("utf-8"),
         msg=body_bytes,
@@ -53,16 +80,15 @@ async def tribute_webhook_handler(request: web.Request) -> web.Response:
     ).hexdigest()
 
     if not hmac.compare_digest(signature_header, computed_signature):
-        print(f"Подпись НЕ совпадает!")
-        print(f"Полученная: {signature_header}")
-        print(f"Вычисленная: {computed_signature}")
-        print(f"Тело: {body_bytes.decode('utf-8')}")
-        return web.Response(text="Invalid signature", status=200)
+        print("Подпись ВСЕ ЕЩЕ НЕ совпадает!")
+        print(f'{computed_signature=}')
+        return web.Response(text="Invalid signature", status=403)
 
-    json_body = json.loads(body_bytes)
+    print("Успех! Подпись совпала после пересборки JSON.")
 
-    event = json_body.get("name")
-    payload = json_body.get("payload")
+    event = correct_dict.get("name")
+    payload = correct_dict.get("payload")
+
     if event == "new_digital_product" and payload:
         telegram_user_id = payload.get("telegram_user_id")
         product_name = payload.get("product_name")
