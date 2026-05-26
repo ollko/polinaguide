@@ -335,7 +335,7 @@ def set_prod_id(tg_id):
         session.execute(
             update(TributePayment)
             .where(TributePayment.telegram_user_id == tg_id)
-            .values(prod_id=tg_id)
+            .values(prod_id=2)
         )
         session.commit()
 
