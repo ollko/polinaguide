@@ -33,14 +33,6 @@ async def get_quide_text(
         return text + "🎉 Мы скоро пришлем ваш гайд."
 
 
-def check_trbt_signature(trbt_signature, body_bytes) -> bool:
-    computed_signature = hmac.new(
-        key=TRIBUTE_API_TOKEN.encode("utf-8"), msg=body_bytes, digestmod=hashlib.sha256
-    ).hexdigest()
-
-    return hmac.compare_digest(trbt_signature, computed_signature)
-
-
 async def tribute_webhook_handler(request: web.Request) -> web.Response:
     bot: Bot = request.app['bot']
 
@@ -54,9 +46,17 @@ async def tribute_webhook_handler(request: web.Request) -> web.Response:
 
     print(f"Заголовки: {dict(request.headers)}")
     print(f"Тело запроса: {body_bytes.decode('utf-8')}")
+    computed_signature = hmac.new(
+        key=TRIBUTE_API_TOKEN.encode("utf-8"),
+        msg=body_bytes,
+        digestmod=hashlib.sha256
+    ).hexdigest()
 
-    if not check_trbt_signature(signature_header, body_bytes):
-        print("Ошибка безопасности trbt: Неверная подпись!")
+    if not hmac.compare_digest(signature_header, computed_signature):
+        print(f"Подпись НЕ совпадает!")
+        print(f"Полученная: {signature_header}")
+        print(f"Вычисленная: {computed_signature}")
+        print(f"Тело: {body_bytes.decode('utf-8')}")
         return web.Response(text="Invalid signature", status=200)
 
     json_body = json.loads(body_bytes)
