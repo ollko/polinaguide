@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select, update, delete
 
-from models import Base, Product, Notification
+from models import Base, Product, Notification, TributePayment
 
 
 RESET_MARKER = "/data/db_dropped_v2.flag"
@@ -322,8 +322,16 @@ def update_product_fields():
         session.commit()
 
 
+def remove_tribute_payments(tg_id):
+    with Session() as session:
+        stmt = delete(TributePayment).where(
+            TributePayment.telegram_user_id == tg_id)
+        session.execute(stmt)
+        session.commit()
+
+
 if __name__ == "__main__":
     if CHANGE_NOTIFIATIONS:
-        update_product_fields()
+        remove_tribute_payments(1845310984)
     else:
         main()
