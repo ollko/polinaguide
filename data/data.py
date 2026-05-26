@@ -136,6 +136,15 @@ async def create_tribute_payment(
             return dict(text="User not found", status=200)
 
         product_name = payload.get("product_name")
+
+        # 3. НАХОДИМ ВНУТРЕННИЙ prod_id ИЗ ТАБЛИЦЫ PRODUCT
+        stmt_prod = select(Product.id).where(
+            Product.product_name == product_name)
+        prod_id = await session.scalar(stmt_prod)
+
+        if not prod_id:
+            print(
+                f"⚠️ Предупреждение: Товар с именем '{product_name}' не найден в таблице product. Поле prod_id будет NULL.")
         amount = payload.get("amount")
         currency = payload.get("currency")
         purchase_created_at = payload.get("purchase_created_at")
@@ -151,6 +160,7 @@ async def create_tribute_payment(
             transaction_id=transaction_id,
             trb_user_id=payload.get("trb_user_id"),
             user_id=payload.get("user_id"),
+            prod_id=prod_id,
         )
         session.add(new_payment)
         await session.commit()
