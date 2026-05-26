@@ -181,14 +181,16 @@ async def create_yookassa_payment(
 ):
 
     async with async_session() as session:
+        invoice_payload = payment.invoice_payload
         new_payment = YookassaPayment(
             # Предполагаем, что id в таблице User равен tg_id
             user_id=int(tg_id),
             currency=payment.currency,
             total_amount=payment.total_amount,  # в копейках
-            invoice_payload=payment.invoice_payload,
+            invoice_payload=invoice_payload,
             telegram_payment_charge_id=payment.telegram_payment_charge_id,
             provider_payment_charge_id=payment.provider_payment_charge_id,
+            prod_id=invoice_payload.split('_')[1]
         )
         session.add(new_payment)
         await session.flush()
