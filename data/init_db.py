@@ -341,7 +341,8 @@ def set_prod_id(tg_id):
 
 
 if __name__ == "__main__":
-    if CHANGE_NOTIFIATIONS:
-        set_prod_id(211526507)
-    else:
-        main()
+    pass
+    # if CHANGE_NOTIFIATIONS:
+    #     set_prod_id(211526507)
+    # else:
+    #     main()

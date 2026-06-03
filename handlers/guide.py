@@ -74,7 +74,7 @@ async def guide(callback: types.CallbackQuery):
             if product.what_inside:
                 product_btns.append(
                     [types.InlineKeyboardButton(
-                        text='Что вынутри',
+                        text='Что внутри',
                         callback_data=f'what_inside:{product.id}'
                     )]
                 )
